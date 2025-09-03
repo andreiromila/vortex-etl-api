@@ -1,6 +1,9 @@
 package com.andreiromila.vetl.api;
 
+import com.andreiromila.vetl.role.RoleReference;
 import com.andreiromila.vetl.token.TokenService;
+import com.andreiromila.vetl.token.TokenWithExpiration;
+import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
+
+import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
 
 /**
  * Using @Transactional in tests it makes sure the DB is clean every time
@@ -59,7 +65,7 @@ public abstract class AbstractIntegrationTest {
 
         // We must configure the StringHttpMessageConverter to use UTF-8
         // This is needed because the rest-template does a strange string conversion
-        // with spanish accents and it returns a reading error.
+        // with spanish accents, and it returns a reading error.
         http.getRestTemplate().getMessageConverters()
                 .stream()
                 .filter(converter -> converter instanceof StringHttpMessageConverter)
@@ -105,6 +111,24 @@ public abstract class AbstractIntegrationTest {
                     request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
                     return execution.execute(request, body);
                 });
+    }
+
+    protected User loginViewer(String username) {
+
+        final User verifiedUser = createUser(username);
+
+        // Add user role to it
+        verifiedUser.setRoles(
+                Set.of(new RoleReference(3L))
+        );
+
+        final User authenticatedUser = userRepository.save(verifiedUser);
+        final TokenWithExpiration tokenWithExpiration = tokenService.createToken(username, SPRING_BOOT_AGENT);
+
+        // Used as Bearer token
+        addAuthorizationHeader(tokenWithExpiration.token());
+
+        return authenticatedUser;
     }
 
 }
