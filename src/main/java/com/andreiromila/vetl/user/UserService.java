@@ -1,19 +1,24 @@
 package com.andreiromila.vetl.user;
 
 import com.andreiromila.vetl.role.Role;
-import com.andreiromila.vetl.role.RoleReference;
 import com.andreiromila.vetl.role.RoleRepository;
+import com.andreiromila.vetl.role.UserRole;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 
@@ -67,8 +72,11 @@ public class UserService implements UserDetailsService {
         final User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("No user found with username: " + username));
 
+        // Get all role references for the current user
+        final Set<UserRole> roleReferences = roleRepository.findUserRoleByUsers(List.of(user.getId()));
+
         // Find all roles
-        final List<Role> userRoles = roleRepository.findAllById(user.getRoles().stream().map(RoleReference::role).toList());
+        final List<Role> userRoles = roleRepository.findAllById(roleReferences.stream().map(UserRole::role).toList());
 
         // Setup user roles with prefix ROLE_ so we can use hasRole("ADMIN")
         user.setAuthorities(
@@ -76,6 +84,9 @@ public class UserService implements UserDetailsService {
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
                         .toList()
         );
+
+        // Set the user roles
+        user.setRoles(Set.copyOf(userRoles));
 
         return user;
     }
@@ -86,6 +97,7 @@ public class UserService implements UserDetailsService {
      * @param request {@link UserCreateRequest} User creation dto containing basic user information
      * @return Persisted user entity with generated fields
      */
+    @Transactional
     public User createUser(final UserCreateRequest request) {
 
         // Create the user aggregate
@@ -105,8 +117,14 @@ public class UserService implements UserDetailsService {
         user.setModifiedAt(Instant.now());
 
         // No default roles
-        return userRepository.save(user);
+        final User savedUser = userRepository.save(user);
 
+        if (request.roles() != null && ! request.roles().isEmpty()) {
+            // Now lets save the roles if the user has any
+            userRepository.insertUserRoles(savedUser.getId(), request.roles());
+        }
+
+        return savedUser;
     }
 
     /**
@@ -118,10 +136,67 @@ public class UserService implements UserDetailsService {
      */
     public Page<User> searchUsers(final String query, final Pageable pageable) {
 
+        // Get the user page first
+        final Page<User> userPage;
+
         if (isNull(query) || query.isBlank()) {
-            return userRepository.findAll(pageable);
+            userPage = userRepository.findAll(pageable);
+        } else {
+            userPage = userRepository.search(query, pageable);
         }
 
-        return userRepository.search(query, pageable);
+        // If there are no user there is no need to search for roles
+        if (userPage.isEmpty()) {
+            return userPage;
+        }
+
+        // Get all user_role references based on the user page
+        final Set<UserRole> roleReferences = roleRepository.findUserRoleByUsers(
+                userPage.get()
+                        .map(User::getId)
+                        .toList()
+        );
+
+        // Now get all the roles for those users
+        final List<Role> roles = roleRepository.findAllById(
+                roleReferences.stream()
+                        .map(UserRole::role)
+                        .collect(Collectors.toSet())
+        );
+
+        // Lastly we must combine and set the roles for every user
+        final List<User> usersWithRoles = userPage.get()
+                .map(user -> userWithRoles(user, roleReferences, roles))
+                .toList();
+
+        // Create the final page with the users
+        return new PageImpl<>(usersWithRoles, userPage.getPageable(), userPage.getTotalElements());
+    }
+
+    /**
+     * It maps the roles to the user
+     *
+     * @param user {@link User} The user to associate
+     * @param roleReferences {@link Set} The ids of roles
+     * @param roles {@link List} The list with all the roles from the database
+     * @return The newly created user
+     */
+    private User userWithRoles(User user, Set<UserRole> roleReferences, List<Role> roles) {
+
+        // Get the role IDs for the current user
+        final Set<Long> userRoleIdentifiers = roleReferences.stream()
+                .filter(it -> Objects.equals(it.user(), user.getId()))
+                .map(UserRole::role)
+                .collect(Collectors.toSet());
+
+        // Create the list for the current user
+        final Set<Role> userRoles = roles.stream()
+                .filter(it -> userRoleIdentifiers.contains(it.id()))
+                .collect(Collectors.toSet());
+
+        // Return the new user with its roles
+        return user.toBuilder()
+                .roles(userRoles)
+                .build();
     }
 }

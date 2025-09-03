@@ -1,10 +1,10 @@
 package com.andreiromila.vetl.api;
 
-import com.andreiromila.vetl.role.RoleReference;
 import com.andreiromila.vetl.token.TokenService;
 import com.andreiromila.vetl.token.TokenWithExpiration;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.UserRepository;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,9 +19,14 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.client.MockMvcClientHttpRequestFactory;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,11 +34,13 @@ import java.util.List;
 import java.util.Set;
 
 import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
+import static com.andreiromila.vetl.factories.AggregatesFactory.getViewerRole;
 
 /**
  * Using @Transactional in tests it makes sure the DB is clean every time
  */
 @Transactional
+@Testcontainers
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -43,6 +50,25 @@ public abstract class AbstractIntegrationTest {
      * Spring boot agent - used inside the token
      */
     public static final String SPRING_BOOT_AGENT = "SpringBoot Integration-Tests Agent";
+
+    static MySQLContainer<?> mySqlContainer =
+            new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
+                    .withReuse(true);
+
+    @BeforeAll
+    static void beforeAll() {
+        mySqlContainer.start();
+    }
+
+    @DynamicPropertySource
+    static void dynamicProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", mySqlContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", mySqlContainer::getUsername);
+        registry.add("spring.datasource.password", mySqlContainer::getPassword);
+        registry.add("spring.flyway.url", mySqlContainer::getJdbcUrl);
+        registry.add("spring.flyway.user", mySqlContainer::getUsername);
+        registry.add("spring.flyway.password", mySqlContainer::getPassword);
+    }
 
     @Autowired
     protected UserRepository userRepository;
@@ -119,7 +145,7 @@ public abstract class AbstractIntegrationTest {
 
         // Add user role to it
         verifiedUser.setRoles(
-                Set.of(new RoleReference(3L))
+                Set.of(getViewerRole())
         );
 
         final User authenticatedUser = userRepository.save(verifiedUser);
@@ -134,13 +160,9 @@ public abstract class AbstractIntegrationTest {
     protected User login(String username) {
 
         final User verifiedUser = createUser(username);
-
-        // Add user role to it
-        verifiedUser.setRoles(
-                Set.of(new RoleReference(1L))
-        );
-
         final User authenticatedUser = userRepository.save(verifiedUser);
+        userRepository.insertUserRole(authenticatedUser.getId(), 1L);
+
         final TokenWithExpiration tokenWithExpiration = tokenService.createToken(username, SPRING_BOOT_AGENT);
 
         // Used as Bearer token

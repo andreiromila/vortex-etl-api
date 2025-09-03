@@ -1,8 +1,10 @@
 package com.andreiromila.vetl.user.web;
 
+import com.andreiromila.vetl.role.web.RoleView;
 import com.andreiromila.vetl.user.User;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Data Transfer Object (DTO) representing a subset of user data for API responses.
@@ -20,8 +22,11 @@ public record UserBasicResponse(
         String username,
         String email,
         String fullName,
+        boolean enabled,
         Instant createdAt,
-        Instant modifiedAt
+        Instant modifiedAt,
+
+        List<RoleView> roles
 ) {
 
     /**
@@ -36,8 +41,14 @@ public record UserBasicResponse(
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
+                user.isEnabled(),
                 user.getCreatedAt(),
-                user.getModifiedAt()
+                user.getModifiedAt(),
+
+                // Get all roles
+                user.getRoles().stream()
+                        .map(RoleView::from)
+                        .toList()
         );
     }
 }

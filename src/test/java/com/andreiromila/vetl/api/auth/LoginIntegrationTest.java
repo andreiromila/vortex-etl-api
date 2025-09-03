@@ -6,6 +6,7 @@ import com.andreiromila.vetl.responses.ErrorResponse;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.UserService;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.ZonedDateTime;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpHeaders.WWW_AUTHENTICATE;
@@ -91,7 +93,7 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
 
         // Given we have a user
         User john = userService.createUser(
-                new UserCreateRequest("John Doe.", "john", "john@example.com", "Pa$$w0rd!")
+                getUserCreateRequest()
         );
 
         // When John tries to authenticate with the system
@@ -114,12 +116,16 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
 
     }
 
+    private static @NotNull UserCreateRequest getUserCreateRequest() {
+        return new UserCreateRequest("John Doe.", "john", "john@example.com", "Pa$$w0rd!", Set.of(3L));
+    }
+
     @Test
     void login_withDisabledUser_returnsUnauthorized() {
 
         // Given we have an unverified user
         User john = userService.createUser(
-                new UserCreateRequest("John Doe.", "john", "john@example.com", "Pa$$w0rd!")
+                getUserCreateRequest()
         );
 
         john.setEnabled(false);

@@ -1,7 +1,10 @@
 package com.andreiromila.vetl.user;
 
-import com.andreiromila.vetl.role.RoleReference;
+import com.andreiromila.vetl.role.Role;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -16,6 +19,9 @@ import java.util.Collection;
 import java.util.Set;
 
 @Data
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @Table("user")
 public class User implements UserDetails {
 
@@ -50,7 +56,8 @@ public class User implements UserDetails {
     @LastModifiedDate
     private Instant modifiedAt;
 
-    private Set<RoleReference> roles;
+    @Transient
+    private Set<Role> roles;
 
     @Transient
     public Collection<? extends GrantedAuthority> authorities;

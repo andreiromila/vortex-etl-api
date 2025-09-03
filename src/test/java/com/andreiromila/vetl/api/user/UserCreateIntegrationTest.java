@@ -2,9 +2,6 @@ package com.andreiromila.vetl.api.user;
 
 import com.andreiromila.vetl.api.AbstractIntegrationTest;
 import com.andreiromila.vetl.responses.ErrorResponse;
-import com.andreiromila.vetl.responses.ValidationError;
-import com.andreiromila.vetl.role.RoleReference;
-import com.andreiromila.vetl.token.TokenWithExpiration;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.web.UserCreateResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -17,18 +14,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
-import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
-import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
 import static com.andreiromila.vetl.utils.StringUtils.generateRandomString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 public class UserCreateIntegrationTest extends AbstractIntegrationTest {
 

@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.util.Set;
+
 /**
  * Request DTO for user creation. Validates input using Jakarta Bean Validation.
  * Annotated with constraints to enforce data integrity before persistence.
@@ -41,6 +43,8 @@ public record UserCreateRequest(
          */
         @NotNull
         @Pattern(regexp = "^((?=\\S*?[A-Z])(?=\\S*?[a-z])(?=\\S*?[0-9]).{5,})\\S$")
-        String password
+        String password,
+
+        Set<Long> roles
 
 ) { }
