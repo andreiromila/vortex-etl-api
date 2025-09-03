@@ -1,0 +1,29 @@
+
+application:
+  # Token secret key
+  token:
+    secret: Va0LFxJywwfqAp03Oo+i47sdN4p4R/RpUbzrMTK4j7sdxJZ9P+XeRIMtgZwXYMxE3rjTydnGzzKM5F1WxsKhOA==
+
+  # Cors configuration
+  cors:
+    allowed-origins:
+      - "http://localhost:5173"
+    allowed-methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      - "OPTIONS"
+    allowed-headers:
+      - "Authorization"
+      - "Content-Type"
+      - "User-Agent"
+    allow-credentials: true
+    max-age: 3600
+
+
+# Logging level for JdbcTemplate and RestTemplate
+logging.level:
+  org.springframework.jdbc.core.JdbcTemplate: debug
+  org.springframework.web.client.RestTemplate: debug

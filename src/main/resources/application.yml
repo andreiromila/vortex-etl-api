@@ -25,6 +25,5 @@ application:
     secret:
 
 # Configuraciones de logging para ver las queries de JDBC
-logging:
-  level:
+logging.level:
     org.springframework.data.jdbc: DEBUG
