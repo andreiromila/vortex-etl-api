@@ -1,5 +1,8 @@
 package com.andreiromila.vetl.security;
 
+import com.andreiromila.vetl.security.filters.JwtAuthorizationFilter;
+import com.andreiromila.vetl.token.TokenService;
+import com.andreiromila.vetl.user.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Central security configuration defining
@@ -91,10 +95,11 @@ public class SecurityConfig {
      * @throws Exception On configuration errors
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(final HttpSecurity http, final UnauthorizedAuthenticatedEntryPoint authenticatedEntryPoint) throws Exception {
+    public SecurityFilterChain securityFilterChain(final HttpSecurity http, final UnauthorizedAuthenticatedEntryPoint authenticatedEntryPoint, final UserService userService, final TokenService tokenService) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(SecurityConfig::httpAuthorizationsConfig)
+                .addFilterBefore(new JwtAuthorizationFilter(userService, tokenService), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(SecurityConfig::stateless)
                 .exceptionHandling(config -> config.authenticationEntryPoint(authenticatedEntryPoint))
                 .build();

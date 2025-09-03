@@ -97,4 +97,14 @@ public abstract class AbstractIntegrationTest {
         request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         return execution.execute(request, body);
     }
+
+    protected void addAuthorizationHeader(String token) {
+        http.getRestTemplate()
+                .getInterceptors()
+                .add((request, body, execution) -> {
+                    request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+                    return execution.execute(request, body);
+                });
+    }
+
 }
