@@ -12,6 +12,12 @@ spring:
     username: vortex
     password: vortex
 
+# Application related configurations
+application:
+  token:
+    ttl: 360000 # 100 hours
+    secret:
+
 # Configuraciones de logging para ver las queries de JDBC
 logging:
   level:
