@@ -4,6 +4,8 @@ import com.andreiromila.vetl.role.Role;
 import com.andreiromila.vetl.role.RoleReference;
 import com.andreiromila.vetl.role.RoleRepository;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+
+import static java.util.Objects.isNull;
 
 /**
  * Service class handling user management
@@ -105,4 +109,19 @@ public class UserService implements UserDetailsService {
 
     }
 
+    /**
+     * Searches the database for users based on the provided query
+     *
+     * @param query {@link String} The string to search for
+     * @param pageable {@link Pageable} Pagination data
+     * @return The page of matching users
+     */
+    public Page<User> searchUsers(final String query, final Pageable pageable) {
+
+        if (isNull(query) || query.isBlank()) {
+            return userRepository.findAll(pageable);
+        }
+
+        return userRepository.search(query, pageable);
+    }
 }

@@ -131,4 +131,22 @@ public abstract class AbstractIntegrationTest {
         return authenticatedUser;
     }
 
+    protected User login(String username) {
+
+        final User verifiedUser = createUser(username);
+
+        // Add user role to it
+        verifiedUser.setRoles(
+                Set.of(new RoleReference(1L))
+        );
+
+        final User authenticatedUser = userRepository.save(verifiedUser);
+        final TokenWithExpiration tokenWithExpiration = tokenService.createToken(username, SPRING_BOOT_AGENT);
+
+        // Used as Bearer token
+        addAuthorizationHeader(tokenWithExpiration.token());
+
+        return authenticatedUser;
+    }
+
 }

@@ -4,7 +4,9 @@ import com.andreiromila.vetl.user.User;
 import com.github.javafaker.Faker;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.IntStream;
 
 public class AggregatesFactory {
 
@@ -28,6 +30,12 @@ public class AggregatesFactory {
 
     public static User createUser() {
         return createUser(faker.name().username());
+    }
+
+    public static List<User> createUsers(int total) {
+        return IntStream.rangeClosed(1, total)
+                .mapToObj(index -> createUser(faker.name().username()))
+                .toList();
     }
 
 }

@@ -1,5 +1,7 @@
 package com.andreiromila.vetl.user.web;
 
+import com.andreiromila.vetl.validation.UniqueEmail;
+import com.andreiromila.vetl.validation.UniqueUsername;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -24,11 +26,13 @@ public record UserCreateRequest(
         @NotNull
         @Size(min = 4, max = 100)
         @Pattern(regexp = "^[a-zA-Z][a-zA-Z0-9_.]+$")
+        @UniqueUsername
         String username,
 
         @NotNull
         @Size(max = 200)
         @Email
+        @UniqueEmail
         String email,
 
         /* The password must have at least 1 lower, 1 upper,

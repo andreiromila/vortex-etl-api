@@ -1,0 +1,58 @@
+package com.andreiromila.vetl.api.user;
+
+import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.responses.ErrorResponse;
+import com.andreiromila.vetl.token.TokenWithExpiration;
+import com.andreiromila.vetl.user.User;
+import com.andreiromila.vetl.user.web.UserBasicResponse;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpHeaders.WWW_AUTHENTICATE;
+
+public class UserDetailsIntegrationTest extends AbstractIntegrationTest {
+
+    @Test
+    void userDetails_withoutBearerToken_returnsUnauthorized() {
+
+        final ResponseEntity<ErrorResponse> response = http.getForEntity("/api/v1/users/me", ErrorResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getHeaders().get(WWW_AUTHENTICATE)).hasSize(1);
+        assertThat(response.getHeaders().get(WWW_AUTHENTICATE)).contains("Bearer realm=vortex.andreiromila.com");
+
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo(401);
+        assertThat(response.getBody().message()).isEqualTo("Invalid credentials.");
+    }
+
+    @Test
+    void userDetails_withAuthenticatedUser_returnsUserDetails() {
+
+        // Given we have a user and a valid token
+        final User john = userRepository.save(createUser("john"));
+        final TokenWithExpiration tokenWithExpiration = tokenService.createToken(john.getUsername(), SPRING_BOOT_AGENT);
+
+        // Used as Bearer token
+        addAuthorizationHeader(tokenWithExpiration.token());
+
+        final ResponseEntity<UserBasicResponse> response = http.getForEntity("/api/v1/users/me", UserBasicResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        assertThat(response.getBody()).isNotNull();
+
+        assertThat(response.getBody().id()).isNotNull();
+        assertThat(response.getBody().username()).isEqualTo(john.getUsername());
+        assertThat(response.getBody().email()).isEqualTo(john.getEmail());
+        assertThat(response.getBody().fullName()).isEqualTo(john.getFullName());
+
+        // The created at property is set by the database, we don't have it here
+        assertThat(response.getBody().createdAt()).isNotNull();
+        assertThat(response.getBody().modifiedAt()).isNotNull();
+
+    }
+}
