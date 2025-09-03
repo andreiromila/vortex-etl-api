@@ -2,9 +2,20 @@ package com.andreiromila.vetl.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Central security configuration defining
@@ -34,4 +45,84 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configures the core authentication manager
+     * for DAO-based user credential verification.
+     * <p>
+     * Integrates with Spring Security's authentication
+     * system using database-backed user details.
+     * <p>
+     * Typical authentication sequence:
+     * <ol>
+     *  <li> UsernamePasswordAuthenticationToken created from login request
+     *  <li> ProviderManager delegates to DaoAuthenticationProvider
+     *  <li> Provider uses UserDetailsService.loadUserByUsername()
+     *  <li> PasswordEncoder.matches() compares credentials
+     *  <li> Returns fully authenticated Authentication object
+     * </ol>
+     *
+     * @param userService     {@link UserDetailsService} User details service implementation for loading security principals
+     * @param passwordEncoder {@link PasswordEncoder} Password encoder for credential validation
+     * @return Authentication manager configured for database authentication
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(final UserDetailsService userService, final PasswordEncoder passwordEncoder) {
+        final DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(authenticationProvider);
+    }
+
+    /**
+     * Defines the security filter chain with
+     * stateless JWT-based authentication
+     * <p>
+     * Disabled CSRF because:
+     * - Stateless API using JWT/Bearer tokens
+     * - No browser cookie-based authentication
+     * - Protected endpoints require explicit auth
+     * <p>
+     * Session management ensures:
+     * - No session cookies created
+     * - Each request requires explicit auth
+     *
+     * @param http                    {@link HttpSecurity} Security configuration builder
+     * @param authenticatedEntryPoint {@link UnauthorizedAuthenticatedEntryPoint} The unauthorized en
+     * @return Configured security filter chain
+     * @throws Exception On configuration errors
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(final HttpSecurity http, final UnauthorizedAuthenticatedEntryPoint authenticatedEntryPoint) throws Exception {
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(SecurityConfig::httpAuthorizationsConfig)
+                .sessionManagement(SecurityConfig::stateless)
+                .exceptionHandling(config -> config.authenticationEntryPoint(authenticatedEntryPoint))
+                .build();
+    }
+
+    /**
+     * Configures stateless session management (no JSESSIONID cookies)
+     *
+     * @param session {@link SessionManagementConfigurer} Session management configurer
+     */
+    private static void stateless(final SessionManagementConfigurer<HttpSecurity> session) {
+        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+    }
+
+    /**
+     * Defines endpoint authorization rules
+     *
+     * @param registry {@link AuthorizeHttpRequestsConfigurer} Authorization configuration registry
+     */
+    private static void httpAuthorizationsConfig(final AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
+        // We need to allow the /error endpoint for everyone
+        registry.requestMatchers("/error").permitAll();
+
+        // User registration is allowed for any user
+        registry.requestMatchers(HttpMethod.POST, "/api/v1/login").permitAll();
+
+        // Everything else must be authenticated
+        registry.anyRequest().authenticated();
+
+    }
 }
