@@ -10,6 +10,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
@@ -33,15 +34,16 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void uploadOwnAvatar_asAuthenticatedUser_returnsHttp200OkAndUpdateUser() throws Exception {
+    void uploadOwnAvatar_asAuthenticatedUser_returnsHttp201CreatedWithLocationHeader() throws Exception {
         // Given
         User authenticatedUser = login("john.doe");
 
         // When
-        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/me/avatar")
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{username}/avatar", authenticatedUser.getUsername())
                         .file(avatarFile)
                         .headers(getAuthHeadersForUser(authenticatedUser)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated())
+                .andExpect(header().exists(HttpHeaders.LOCATION));
 
         // Then
         User updatedUser = userRepository.findById(authenticatedUser.getId()).orElseThrow();
@@ -63,10 +65,11 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
         User targetUser = userRepository.save(AggregatesFactory.createUser("target.user"));
 
         // When
-        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{userId}/avatar", targetUser.getId())
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{username}/avatar", targetUser.getUsername())
                         .file(avatarFile)
                         .headers(getAuthHeadersForUser(admin)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated())
+                .andExpect(header().exists(HttpHeaders.LOCATION));
 
         // Then
         User updatedTargetUser = userRepository.findById(targetUser.getId()).orElseThrow();
@@ -81,7 +84,7 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
         User targetUser = userRepository.save(AggregatesFactory.createUser("another.user"));
 
         // When / Then
-        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{userId}/avatar", targetUser.getId())
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{username}/avatar", targetUser.getUsername())
                         .file(avatarFile)
                         .headers(getAuthHeadersForUser(regularUser)))
                 .andExpect(status().isForbidden());
@@ -96,7 +99,7 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
         MockMultipartFile largeFile = new MockMultipartFile("file", "large-avatar.png", MediaType.IMAGE_PNG_VALUE, largeContent);
 
         // When / Then
-        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/me/avatar")
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{username}/avatar", authenticatedUser.getUsername())
                         .file(largeFile)
                         .headers(getAuthHeadersForUser(authenticatedUser)))
                 .andExpect(status().isBadRequest());

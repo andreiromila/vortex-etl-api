@@ -38,7 +38,7 @@ public class UserDetailsIntegrationTest extends AbstractIntegrationTest {
 
         // Given we have a user and a valid token
         final User john = login("john");
-        final ResponseEntity<UserBasicResponse> response = http.getForEntity("/api/v1/users/me", UserBasicResponse.class);
+        final ResponseEntity<UserBasicResponse> response = http.getForEntity("/api/v1/users/" + john.getUsername(), UserBasicResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 

@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
@@ -61,14 +61,21 @@ public class UserController {
     }
 
     /**
-     * Retrieves details of the authenticated user.
+     * Retrieves the public details of a specific user by their username.
+     * This endpoint is accessible to any authenticated user.
      *
-     * @param user {@link User} Authenticated user resolved via Spring Security's {@link AuthenticationPrincipal}.
+     * @param username {@link String} The username of the user to retrieve.
      * @return ResponseEntity containing a {@link UserBasicResponse} with non-sensitive user data.
      */
-    @GetMapping("/me")
-    public ResponseEntity<UserBasicResponse> getAuthenticatedUserDetails(@AuthenticationPrincipal User user) {
+    @GetMapping("/{username}")
+    public ResponseEntity<UserBasicResponse> getAuthenticatedUserDetails(@PathVariable String username) {
+
+        // Find the user using the userDetailsService method
+        final User user = userService.loadUserByUsername(username);
+
+        // Return the user
         return ResponseEntity.ok(UserBasicResponse.from(user));
+
     }
 
     /**
@@ -92,6 +99,20 @@ public class UserController {
 
     }
 
+    /**
+     * Searches for users based on a query string and returns a paginated result.
+     * The search is performed across multiple fields like username, full name, and email.
+     * If the query is null or blank, it returns all users.
+     * <p>
+     * This method also sanitizes the sorting parameters provided by the client
+     * to prevent unauthorized column sorting.
+     *
+     * @param query    {@link String} An optional search term to filter users. The search is case-insensitive.
+     * @param pageable {@link Pageable} A Spring Data Pageable object containing pagination and
+     *                 sorting information provided via URL parameters (e.g., ?page=1&size=10&sort=username,asc).
+     *
+     * @return A {@link ResponseEntity} containing a {@link CustomPage} of {@link UserBasicResponse} objects.
+     */
     @GetMapping
     public ResponseEntity<?> search(@RequestParam(value = "query", required = false) String query, Pageable pageable) {
 
@@ -116,42 +137,20 @@ public class UserController {
     }
 
     /**
-     * Handles the avatar upload for the currently authenticated user.
+     * Handles the avatar upload for a specific user, identified by username.
+     * Access is restricted to the user themselves or an administrator.
      *
-     * @param currentUser {@link User} The authenticated user principal.
-     * @param file        {@link MultipartFile} The avatar file being uploaded.
+     * @param username {@link String} The username of the user whose avatar is being uploaded.
+     * @param file     {@link MultipartFile} The avatar file being uploaded.
      * @return An HTTP 200 OK response on success.
      */
-    @PostMapping(path = "/me/avatar", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<Void> uploadOwnAvatar(@AuthenticationPrincipal User currentUser, @RequestParam("file") MultipartFile file) {
-        // Delegate to the shared avatar upload logic
-        uploadAndSetAvatar(currentUser.getId(), file);
-        return ResponseEntity.ok().build();
-    }
+    @PostMapping(path = "/{username}/avatar", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PreAuthorize("#username == principal.username or hasRole('ADMIN')")
+    public ResponseEntity<Void> uploadAvatarForUser(@PathVariable String username,
+                                                    @RequestParam("file") MultipartFile file) {
 
-    /**
-     * Handles the avatar upload for any user, restricted to administrators.
-     *
-     * @param userId {@link Long} The ID of the user whose avatar is being changed.
-     * @param file   {@link MultipartFile} The avatar file being uploaded.
-     * @return An HTTP 200 OK response on success.
-     */
-    @PostMapping(path = "/{userId}/avatar", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> uploadUserAvatar(@PathVariable Long userId, @RequestParam("file") MultipartFile file) {
-        // Delegate to the shared avatar upload logic
-        uploadAndSetAvatar(userId, file);
-        return ResponseEntity.ok().build();
-    }
-
-    /**
-     * Private helper method to handle file validation and storage logic.
-     *
-     * @param userId {@link Long} The ID of the user to associate the avatar with.
-     * @param file   {@link MultipartFile} The avatar file.
-     * @throws HttpBadRequestException if the file is invalid (e.g., too large).
-     */
-    private void uploadAndSetAvatar(Long userId, MultipartFile file) {
+        // Load the user
+        final User user = userService.loadUserByUsername(username);
 
         // Validate file presence and size (e.g., max 5MB)
         if (file.isEmpty() || file.getSize() > 5 * 1024 * 1024) {
@@ -162,6 +161,12 @@ public class UserController {
         String avatarKey = fileStorageService.uploadFile(file);
 
         // Update the user's record in the database with the new key
-        userService.updateAvatarKey(userId, avatarKey);
+        userService.updateAvatarKey(user.getId(), avatarKey);
+
+        // Returns the 201 created
+        return ResponseEntity.created(
+                URI.create(fileStorageService.getPublicFileUrl(avatarKey))
+        ).build();
     }
+
 }
