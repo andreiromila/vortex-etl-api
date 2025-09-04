@@ -3,6 +3,7 @@ package com.andreiromila.vetl.user;
 import com.andreiromila.vetl.role.Role;
 import com.andreiromila.vetl.role.RoleRepository;
 import com.andreiromila.vetl.role.UserRole;
+import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -48,16 +49,26 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
 
     /**
+     * Service for file storage operations.
+     */
+    private final FileStorageService fileStorageService;
+
+    /**
      * Constructs a UserService with required dependencies
      *
      * @param userRepository  {@link UserRepository} The user repository bean
      * @param roleRepository  {@link RoleRepository} The role repository bean
      * @param passwordEncoder {@link PasswordEncoder} The password encoder bean
+     * @param fileStorageService {@link FileStorageService} Service for file storage operations.
      */
-    public UserService(final UserRepository userRepository, final RoleRepository roleRepository, final PasswordEncoder passwordEncoder) {
+    public UserService(final UserRepository userRepository,
+                       final RoleRepository roleRepository,
+                       final PasswordEncoder passwordEncoder,
+                       final FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.fileStorageService = fileStorageService;
     }
 
     /**
@@ -88,7 +99,8 @@ public class UserService implements UserDetailsService {
         // Set the user roles
         user.setRoles(Set.copyOf(userRoles));
 
-        return user;
+        // Populate the transient avatar URL field
+        return userWithAvatarUrl(user);
     }
 
     /**
@@ -167,6 +179,7 @@ public class UserService implements UserDetailsService {
         // Lastly we must combine and set the roles for every user
         final List<User> usersWithRoles = userPage.get()
                 .map(user -> userWithRoles(user, roleReferences, roles))
+                .map(this::userWithAvatarUrl)
                 .toList();
 
         // Create the final page with the users
@@ -198,5 +211,35 @@ public class UserService implements UserDetailsService {
         return user.toBuilder()
                 .roles(userRoles)
                 .build();
+    }
+
+    /**
+     * Updates the avatar key for a user in the database.
+     *
+     * @param userId    {@link Long} The ID of the user to update.
+     * @param avatarKey {@link String} The new object key for the avatar file.
+     */
+    @Transactional
+    public void updateAvatarKey(Long userId, String avatarKey) {
+        // Delegate the update operation to the repository
+        userRepository.updateAvatarKey(userId, avatarKey);
+    }
+
+    /**
+     * Helper method to populate a User object with its public avatar URL.
+     *
+     * @param user {@link User} The user object to enrich.
+     * @return The {@link User} object with the `avatarUrl` field populated.
+     */
+    private User userWithAvatarUrl(User user) {
+        // Check if the user has an associated avatar key
+        if (user.getAvatarKey() != null && !user.getAvatarKey().isBlank()) {
+            // Generate the public URL using the storage service
+            String avatarUrl = fileStorageService.getPublicFileUrl(user.getAvatarKey());
+            // Return a new builder-based instance with the URL set
+            return user.toBuilder().avatarUrl(avatarUrl).build();
+        }
+        // Return the original user if no avatar key is present
+        return user;
     }
 }

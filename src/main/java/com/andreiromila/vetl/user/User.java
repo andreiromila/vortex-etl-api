@@ -33,6 +33,18 @@ public class User implements UserDetails {
     private String email;
     private String fullName;
 
+    /**
+     * The object key/name for the user avatar stored in MinIO.
+     */
+    private String avatarKey;
+
+    /**
+     * The transient, fully-qualified URL for the user's avatar.
+     * This field is populated at runtime and not persisted.
+     */
+    @Transient
+    private String avatarUrl;
+
     // Spring security fields
     private boolean enabled = true;
 

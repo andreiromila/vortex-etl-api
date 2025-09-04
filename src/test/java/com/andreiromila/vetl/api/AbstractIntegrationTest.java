@@ -1,9 +1,14 @@
 package com.andreiromila.vetl.api;
 
+import com.andreiromila.vetl.factories.AggregatesFactory;
 import com.andreiromila.vetl.token.TokenService;
 import com.andreiromila.vetl.token.TokenWithExpiration;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.UserRepository;
+import io.minio.BucketExistsArgs;
+import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
+import io.minio.SetBucketPolicyArgs;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +29,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.client.MockMvcClientHttpRequestFactory;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -55,19 +61,58 @@ public abstract class AbstractIntegrationTest {
             new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
                     .withReuse(true);
 
+    static MinIOContainer minioContainer =
+            new MinIOContainer("minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1")
+                    .withReuse(true);
+
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws Exception {
         mySqlContainer.start();
+        minioContainer.start();
+
+        // --- Lógica para crear el bucket público ---
+        // Necesitamos crear el bucket 'vortex-avatars' y hacerlo público
+        // para que las pruebas de integración funcionen correctamente.
+        MinioClient setupClient = MinioClient.builder()
+                .endpoint(minioContainer.getS3URL())
+                .credentials(minioContainer.getUserName(), minioContainer.getPassword())
+                .build();
+
+        String bucketName = "vortex-avatars";
+        // 1. Comprueba si el bucket ya existe
+        boolean bucketExists = setupClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+
+        // 2. Si NO existe, créalo.
+        if ( ! bucketExists) {
+            setupClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+
+            // La política para hacer el bucket público
+            String publicPolicy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::" + bucketName + "/*\"]}]}";
+            setupClient.setBucketPolicy(SetBucketPolicyArgs.builder().bucket(bucketName).config(publicPolicy).build());
+        }
+
     }
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
+
+        // Database config
         registry.add("spring.datasource.url", mySqlContainer::getJdbcUrl);
         registry.add("spring.datasource.username", mySqlContainer::getUsername);
         registry.add("spring.datasource.password", mySqlContainer::getPassword);
+
+        // Flyway
         registry.add("spring.flyway.url", mySqlContainer::getJdbcUrl);
         registry.add("spring.flyway.user", mySqlContainer::getUsername);
         registry.add("spring.flyway.password", mySqlContainer::getPassword);
+
+        // MinIO config
+        // Inyectamos dinámicamente la configuración del contenedor MinIO
+        // en el contexto de Spring para que la aplicación se conecte a él.
+        registry.add("minio.endpoint", minioContainer::getS3URL);
+        registry.add("minio.access-key", minioContainer::getUserName);
+        registry.add("minio.secret-key", minioContainer::getPassword);
+        registry.add("minio.bucket-name", () -> "vortex-avatars");
     }
 
     @Autowired
@@ -77,7 +122,7 @@ public abstract class AbstractIntegrationTest {
     protected TokenService tokenService;
 
     @Autowired
-    MockMvc mvc;
+    protected MockMvc mvc;
 
     protected TestRestTemplate http;
 
@@ -158,16 +203,21 @@ public abstract class AbstractIntegrationTest {
     }
 
     protected User login(String username) {
+        return login(username, 1L);
+    }
 
-        final User verifiedUser = createUser(username);
-        final User authenticatedUser = userRepository.save(verifiedUser);
-        userRepository.insertUserRole(authenticatedUser.getId(), 1L);
+    protected User login(String username, Long... roleIds) {
+        User user = createUser(username);
+        User authenticatedUser = userRepository.save(user);
+
+        if (roleIds != null) {
+            for (Long roleId : roleIds) {
+                userRepository.insertUserRole(authenticatedUser.getId(), roleId);
+            }
+        }
 
         final TokenWithExpiration tokenWithExpiration = tokenService.createToken(username, SPRING_BOOT_AGENT);
-
-        // Used as Bearer token
         addAuthorizationHeader(tokenWithExpiration.token());
-
         return authenticatedUser;
     }
 

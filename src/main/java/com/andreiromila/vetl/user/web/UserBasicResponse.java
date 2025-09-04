@@ -16,6 +16,8 @@ import java.util.List;
  * @param fullName   {@link String} User's full name, including Unicode characters and spaces.
  * @param createdAt  {@link Instant} Timestamp of user creation (UTC).
  * @param modifiedAt {@link Instant} Timestamp of last user modification (UTC).
+ * @param avatarUrl  {@link String} The public URL to the user's avatar image.
+ * @param roles      {@link List} The list of roles assigned to the user.
  */
 public record UserBasicResponse(
         Long id,
@@ -26,6 +28,7 @@ public record UserBasicResponse(
         Instant createdAt,
         Instant modifiedAt,
 
+        String avatarUrl,
         List<RoleView> roles
 ) {
 
@@ -45,6 +48,7 @@ public record UserBasicResponse(
                 user.getCreatedAt(),
                 user.getModifiedAt(),
 
+                user.getAvatarUrl(),
                 // Get all roles
                 user.getRoles().stream()
                         .map(RoleView::from)

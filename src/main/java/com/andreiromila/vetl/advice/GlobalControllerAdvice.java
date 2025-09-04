@@ -1,5 +1,6 @@
 package com.andreiromila.vetl.advice;
 
+import com.andreiromila.vetl.exceptions.HttpException;
 import com.andreiromila.vetl.responses.ErrorResponse;
 import com.andreiromila.vetl.responses.ValidationError;
 import jakarta.servlet.http.HttpServletRequest;
@@ -83,5 +84,29 @@ public class GlobalControllerAdvice {
 
         // Return the response with bad request status
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * Generic exception handler for custom, semantic HTTP exceptions.
+     * It extracts the HttpStatus and message from the exception and builds a
+     * standard ErrorResponse.
+     *
+     * @param exception {@link HttpException} The custom exception that was thrown.
+     * @param request   {@link HttpServletRequest} The current servlet request.
+     * @return A ResponseEntity with the appropriate status code and formatted error body.
+     */
+    @ExceptionHandler(HttpException.class)
+    public ResponseEntity<ErrorResponse> handleHttpException(HttpException exception, HttpServletRequest request) {
+        // Create the structured error response body from the exception details
+        final ErrorResponse responseBody = new ErrorResponse(
+                exception.getStatus().value(),
+                exception.getMessage(),
+                request.getServletPath()
+        );
+
+        // Return a response entity with the status and body from the exception
+        return ResponseEntity
+                .status(exception.getStatus())
+                .body(responseBody);
     }
 }

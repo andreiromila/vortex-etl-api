@@ -2,6 +2,7 @@ package com.andreiromila.vetl.user;
 
 import com.andreiromila.vetl.AbstractDatabaseTest;
 import com.andreiromila.vetl.role.RoleRepository;
+import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.Set;
 
@@ -26,11 +28,14 @@ public class UserServiceTest extends AbstractDatabaseTest {
     @Autowired
     RoleRepository roleRepository;
 
+    @MockitoBean
+    FileStorageService storageService;
+
     UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, roleRepository, bcrypt);
+        userService = new UserService(userRepository, roleRepository, bcrypt, storageService);
     }
 
     @Test

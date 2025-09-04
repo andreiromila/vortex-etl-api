@@ -52,6 +52,11 @@ public class AggregatesFactory {
         user.setEmail(faker.internet().safeEmailAddress());
         user.setPassword(faker.internet().password());
         user.setFullName(faker.name().fullName());
+
+        final String avatarUrl = faker.avatar().image();
+        user.setAvatarKey(avatarUrl.substring(avatarUrl.lastIndexOf('/') + 1));
+        user.setAvatarUrl(avatarUrl);
+
         user.setEnabled(true);
         user.setModifiedAt(now);
 

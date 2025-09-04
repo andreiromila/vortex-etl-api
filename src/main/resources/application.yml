@@ -1,14 +1,13 @@
 spring:
   application.name: vortex-etl-api
+  profiles.active: local
 
-  profiles:
-    active: local
   threads:
     virtual:
       enabled: true
 
   datasource:
-    url: jdbc:mysql://localhost:3366/vortex_etl
+    url: jdbc:mysql://localhost:13366/vortex_etl
     username: vortex
     password: vortex
 
