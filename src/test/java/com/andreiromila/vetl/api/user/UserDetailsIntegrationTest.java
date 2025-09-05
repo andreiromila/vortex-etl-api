@@ -1,15 +1,10 @@
 package com.andreiromila.vetl.api.user;
 
 import com.andreiromila.vetl.api.AbstractIntegrationTest;
-import com.andreiromila.vetl.responses.CustomPage;
 import com.andreiromila.vetl.responses.ErrorResponse;
-import com.andreiromila.vetl.token.TokenWithExpiration;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.web.UserBasicResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -37,7 +32,7 @@ public class UserDetailsIntegrationTest extends AbstractIntegrationTest {
     void userDetails_withAuthenticatedUser_returnsUserDetails() {
 
         // Given we have a user and a valid token
-        final User john = login("john");
+        final User john = loginAdmin("john");
         final ResponseEntity<UserBasicResponse> response = http.getForEntity("/api/v1/users/" + john.getUsername(), UserBasicResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

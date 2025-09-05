@@ -68,7 +68,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
     void createUser_withValidData_returnsCreatedUser() {
 
         // Given we have an administrator
-        login("administrator");
+        loginAdmin("administrator");
 
         var body = """
                 {
@@ -134,7 +134,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withNullFullName_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -158,7 +158,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withInvalidFullName_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -183,7 +183,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_with3CharactersFullName_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -207,7 +207,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_with101CharactersFullName_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             final String fullName101Characters = IntStream.rangeClosed(1, 101)
                     .mapToObj(i -> "b")
@@ -235,7 +235,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withNullUsername_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -259,7 +259,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withInvalidUsername_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -283,7 +283,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_with101CharactersUsername_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             final String username101Characters = IntStream.rangeClosed(1, 101)
                     .mapToObj(i -> "a")
@@ -311,7 +311,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_with3CharactersUsername_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             // The username must be at least 4 characters
             var body = """
@@ -336,7 +336,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withExistingUsername_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             // Given we have an existing user with username "existing.username"
             userRepository.save(createUser("existing.username"));
@@ -363,7 +363,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withNullEmail_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -387,7 +387,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withInvalidEmail_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -411,7 +411,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withExistingEmail_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             final User user = createUser("existing.email");
             user.setEmail("existing.email@email.com");
@@ -440,7 +440,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_with201CharactersEmail_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             // Hibernate validator uses 64 character max length for the username
             final String localPart = "a" + generateRandomString(63);
@@ -472,7 +472,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withNullPassword_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {
@@ -496,7 +496,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         void createUser_withInvalidPassword_returnsBadRequest() {
 
             // Given we have an administrator
-            login("administrator");
+            loginAdmin("administrator");
 
             var body = """
                 {

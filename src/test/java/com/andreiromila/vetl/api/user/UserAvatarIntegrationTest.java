@@ -38,7 +38,7 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
     @Test
     void uploadOwnAvatar_asAuthenticatedUser_returnsHttp201CreatedWithLocationHeader() throws Exception {
         // Given
-        User authenticatedUser = login("john.doe");
+        User authenticatedUser = loginAdmin("john.doe");
 
         // When
         mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{username}/avatar", authenticatedUser.getUsername())
@@ -63,7 +63,7 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
     @Test
     void uploadUserAvatar_asAdmin_returnsHttp201Created() throws Exception {
         // Given
-        User admin = login("admin.user", 1L); // Login with ADMIN role
+        User admin = loginWithRole("admin.user", 1L); // Login with ADMIN role
         User targetUser = userRepository.save(AggregatesFactory.createUser("target.user"));
 
         String expectedLocationPattern = minioContainer.getS3URL() + "/vortex-avatars/";
@@ -100,7 +100,7 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
     @Test
     void uploadAvatar_withFileTooLarge_returnsHttp400BadRequest() throws Exception {
         // Given
-        User authenticatedUser = login("john.doe");
+        User authenticatedUser = loginAdmin("john.doe");
         byte[] largeContent = new byte[6 * 1024 * 1024];
         MockMultipartFile largeFile = new MockMultipartFile("file", "large-avatar.png", MediaType.IMAGE_PNG_VALUE, largeContent);
 

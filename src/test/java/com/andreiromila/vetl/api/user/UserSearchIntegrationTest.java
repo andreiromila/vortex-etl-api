@@ -29,7 +29,7 @@ public class UserSearchIntegrationTest extends AbstractIntegrationTest {
         ));
 
         // And a logged-in user "John"
-        login("john");
+        loginAdmin("john");
 
         // When John accesses the user-list endpoint
         final ResponseEntity<CustomPage<UserBasicResponse>> response = http.exchange(
@@ -55,7 +55,7 @@ public class UserSearchIntegrationTest extends AbstractIntegrationTest {
     void listUsers_returnsCustomPageStructure() {
 
         // Given we have a verified use that is logged in
-        login("john");
+        loginAdmin("john");
 
         // And 25 users in the database (with John are 25)
         userRepository.saveAll(createUsers(24));
@@ -93,7 +93,7 @@ public class UserSearchIntegrationTest extends AbstractIntegrationTest {
     void listUsers_withUsernameFilter_returnsFilteredPage() {
 
         // Given we have a verified user that is logged in
-        login("john");
+        loginAdmin("john");
 
         // And 3 more users
         userRepository.save(createUser("tech.guru"));
@@ -119,7 +119,7 @@ public class UserSearchIntegrationTest extends AbstractIntegrationTest {
     void listUser_withInvalidSortColumn_returnsResultsIgnoringTheValues() {
 
         // Given we have a verified user that is logged in
-        login("john");
+        loginAdmin("john");
 
         // And 3 more users
         userRepository.save(createUser("b_second"));

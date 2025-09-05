@@ -1,6 +1,5 @@
 package com.andreiromila.vetl.api;
 
-import com.andreiromila.vetl.factories.AggregatesFactory;
 import com.andreiromila.vetl.token.TokenService;
 import com.andreiromila.vetl.token.TokenWithExpiration;
 import com.andreiromila.vetl.user.User;
@@ -37,10 +36,8 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
-import static com.andreiromila.vetl.factories.AggregatesFactory.getViewerRole;
 
 /**
  * Using @Transactional in tests it makes sure the DB is clean every time
@@ -185,28 +182,18 @@ public abstract class AbstractIntegrationTest {
     }
 
     protected User loginViewer(String username) {
-
-        final User verifiedUser = createUser(username);
-
-        // Add user role to it
-        verifiedUser.setRoles(
-                Set.of(getViewerRole())
-        );
-
-        final User authenticatedUser = userRepository.save(verifiedUser);
-        final TokenWithExpiration tokenWithExpiration = tokenService.createToken(username, SPRING_BOOT_AGENT);
-
-        // Used as Bearer token
-        addAuthorizationHeader(tokenWithExpiration.token());
-
-        return authenticatedUser;
+        return loginWithRole(username, 3L);
     }
 
-    protected User login(String username) {
-        return login(username, 1L);
+    protected User loginEditor(String username) {
+        return loginWithRole(username, 2L);
     }
 
-    protected User login(String username, Long... roleIds) {
+    protected User loginAdmin(String username) {
+        return loginWithRole(username, 1L);
+    }
+
+    protected User loginWithRole(String username, Long... roleIds) {
         User user = createUser(username);
         User authenticatedUser = userRepository.save(user);
 
