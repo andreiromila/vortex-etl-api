@@ -60,7 +60,7 @@ public class UserController {
      * @return ResponseEntity containing a {@link UserBasicResponse} with non-sensitive user data.
      */
     @GetMapping("/{username}")
-    public ResponseEntity<UserBasicResponse> getAuthenticatedUserDetails(@PathVariable String username) {
+    public ResponseEntity<UserBasicResponse> getUserDetails(@PathVariable String username) {
 
         // Find the user using the userDetailsService method
         final User user = userService.loadUserByUsername(username);
@@ -81,7 +81,7 @@ public class UserController {
     public ResponseEntity<UserCreateResponse> create(@Valid @RequestBody UserCreateRequest request) {
 
         // Store the user into the database
-        final User user = userService.createUser(request);
+        final User user = userService.createUserWithInvitation(request);
 
         // Create the response body
         final UserCreateResponse responseBody = UserCreateResponse.from(user);

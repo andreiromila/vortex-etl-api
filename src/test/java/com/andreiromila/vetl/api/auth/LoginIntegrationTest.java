@@ -2,6 +2,7 @@ package com.andreiromila.vetl.api.auth;
 
 import com.andreiromila.vetl.api.AbstractIntegrationTest;
 import com.andreiromila.vetl.auth.LoginResponse;
+import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.responses.ErrorResponse;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.UserService;
@@ -12,7 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Set;
 
@@ -23,6 +27,12 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @MockitoBean
+    EmailService emailService;
 
     @Test
     void login_usingNullUsername_returnsUnauthorized() {
@@ -92,9 +102,16 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
     void login_withValidCredentials_returnsOkResponse() {
 
         // Given we have a user
-        User john = userService.createUser(
+        User john = userService.createUserWithInvitation(
                 getUserCreateRequest()
         );
+
+        // Enable and activate the user ...
+        john.setEnabled(true);
+        john.setEmailValidatedAt(Instant.now());
+        john.setPassword(passwordEncoder.encode("Pa$$w0rd!"));
+
+        userRepository.save(john);
 
         // When John tries to authenticate with the system
         String body = """
@@ -117,14 +134,14 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static @NotNull UserCreateRequest getUserCreateRequest() {
-        return new UserCreateRequest("John Doe.", "john", "john@example.com", "Pa$$w0rd!", Set.of(3L));
+        return new UserCreateRequest("John Doe.", "john", "john@example.com", Set.of(3L));
     }
 
     @Test
     void login_withDisabledUser_returnsUnauthorized() {
 
         // Given we have an unverified user
-        User john = userService.createUser(
+        User john = userService.createUserWithInvitation(
                 getUserCreateRequest()
         );
 

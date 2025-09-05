@@ -1,18 +1,21 @@
 package com.andreiromila.vetl.api.user;
 
 import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.responses.ErrorResponse;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.web.UserCreateResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import java.time.ZonedDateTime;
@@ -22,11 +25,17 @@ import java.util.stream.IntStream;
 import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
 import static com.andreiromila.vetl.utils.StringUtils.generateRandomString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 public class UserCreateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     MockMvcTester mvc;
+
+    @MockitoBean
+    EmailService emailService;
 
     MockMvcTester.MockMvcRequestBuilder httpPost() {
         return mvc.post()
@@ -43,7 +52,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John W. Doe",
                     "username": "john.doe",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -65,40 +74,59 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void createUser_withValidData_returnsCreatedUser() {
+    void createUser_asAdmin_doesNotSetPasswordAndSendsInvitationEmail() {
+        // Given un administrador está logueado
+        loginAdmin("test.admin");
 
-        // Given we have an administrator
-        loginAdmin("administrator");
-
+        // El cuerpo de la petición ya no lleva contraseña
         var body = """
                 {
-                    "fullName": "John W. Doe",
-                    "username": "john.doe",
-                    "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "fullName": "New User",
+                    "username": "new.user",
+                    "email": "new.user@example.com",
+                    "roles": [3]
                 }
                 """;
 
-        ResponseEntity<UserCreateResponse> response = http.postForEntity("/api/v1/users", new HttpEntity<>(body), UserCreateResponse.class);
+        // When el admin crea un nuevo usuario
+        ResponseEntity<UserCreateResponse> response = http.postForEntity(
+                "/api/v1/users",
+                new HttpEntity<>(body),
+                UserCreateResponse.class
+        );
 
+        // Then la respuesta de la API es correcta
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
+        Long newUserId = response.getBody().id();
 
-        // Make sure the user is stored into the database
-        assertThat(userRepository.findById(response.getBody().id()))
-                .hasValueSatisfying(user -> {
+        // Y el usuario se ha guardado en la BBDD correctamente
+        User createdUser = userRepository.findById(newUserId).orElseThrow();
+        assertThat(createdUser.getPassword()).isNull(); // La contraseña es nula
+        assertThat(createdUser.isEnabled()).isFalse(); // El usuario está deshabilitado
+        assertThat(createdUser.getEmailActivationCode()).isNotNull().hasSize(64); // Se ha generado un código
+        assertThat(createdUser.getEmailValidatedAt()).isNull(); // Aún no ha sido validado
 
-                    // The stored password should NOT be in plain text
-                    assertThat(user.getPassword()).isNotEqualTo("Pa$$w0rd!");
+        // --- VERIFICACIÓN DEL ENVÍO DE EMAIL ---
 
-                    assertThat(user.getUsername()).isEqualTo("john.doe");
-                    assertThat(user.getFullName()).isEqualTo("John W. Doe");
-                    assertThat(user.getEmail()).isEqualTo("john.doe@email.com");
+        // Creamos un ArgumentCaptor para capturar el cuerpo del email que se envió
+        ArgumentCaptor<String> emailBodyCaptor = ArgumentCaptor.forClass(String.class);
 
-                    assertThat(user.getCreatedAt()).isNotNull();
-                    assertThat(user.getModifiedAt()).isNotNull();
-                });
+        // Verificamos que el método sendSimpleMessage fue llamado UNA VEZ
+        // con el email del nuevo usuario, un asunto específico, y capturamos el cuerpo.
+        // Usamos `timeout` por si el envío de email se hiciera asíncrono en el futuro.
+        verify(emailService, timeout(1000).times(1))
+                .sendSimpleMessage(
+                        eq("new.user@example.com"),
+                        eq("New Vortex ETL Registration Link"),
+                        emailBodyCaptor.capture()
+                );
 
+        // Ahora podemos hacer aserciones sobre el cuerpo del email capturado
+        String capturedEmailBody = emailBodyCaptor.getValue();
+        assertThat(capturedEmailBody).contains("http://localhost:5173/set-password");
+        assertThat(capturedEmailBody).contains("token=" + createdUser.getEmailActivationCode());
+        assertThat(capturedEmailBody).contains("username=" + createdUser.getUsername());
     }
 
     @Test
@@ -112,7 +140,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John W. Doe",
                     "username": "john.doe",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -141,7 +169,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": null,
                     "username": "john.doe",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -165,7 +193,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "invalid \\" user # name",
                     "username": "john.doe",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -190,7 +218,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "abc",
                     "username": "john.doe",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -218,7 +246,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "%s",
                     "username": "john.doe",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """.formatted(fullName101Characters);
 
@@ -242,7 +270,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": null,
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -266,7 +294,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "invalid user name %%",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -294,7 +322,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "%s",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """.formatted(username101Characters);
 
@@ -319,7 +347,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "abc",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -346,7 +374,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "existing.username",
                     "email": "john.doe@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -370,7 +398,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "john.doe",
                     "email": null,
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -394,7 +422,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "john.doe",
                     "email": "invalid-email",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -423,7 +451,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "john.doe",
                     "email": "existing.email@email.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """;
 
@@ -455,7 +483,7 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
                     "fullName": "John Doe",
                     "username": "john.doe",
                     "email": "%s@%s.com",
-                    "password": "Pa$$w0rd!"
+                    "roles": [3]
                 }
                 """.formatted(localPart, domain);
 
@@ -467,53 +495,6 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
 
         }
 
-        @Test
-        @DisplayName("The password is null")
-        void createUser_withNullPassword_returnsBadRequest() {
-
-            // Given we have an administrator
-            loginAdmin("administrator");
-
-            var body = """
-                {
-                    "fullName": "John Doe",
-                    "username": "john.doe",
-                    "email": "john.doe@example.com",
-                    "password": null
-                }
-                """;
-
-            final ResponseEntity<ErrorResponse> response = http.postForEntity("/api/v1/users", new HttpEntity<>(body), ErrorResponse.class);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().validationErrors().getFirst().field()).isEqualTo("password");
-
-        }
-
-        @Test
-        @DisplayName("The password has invalid characters")
-        void createUser_withInvalidPassword_returnsBadRequest() {
-
-            // Given we have an administrator
-            loginAdmin("administrator");
-
-            var body = """
-                {
-                    "fullName": "John Doe",
-                    "username": "john.doe",
-                    "email": "john.doe@example.com",
-                    "password": "abc"
-                }
-                """;
-
-            final ResponseEntity<ErrorResponse> response = http.postForEntity("/api/v1/users", new HttpEntity<>(body), ErrorResponse.class);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().validationErrors().getFirst().field()).isEqualTo("password");
-
-        }
     }
 
 }

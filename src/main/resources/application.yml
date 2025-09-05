@@ -1,6 +1,8 @@
 spring:
   application.name: vortex-etl-api
-  profiles.active: local
+  profiles.active:
+    - local
+    - local-secrets
 
   threads:
     virtual:
@@ -16,6 +18,19 @@ spring:
       default-page-size: 10
       max-page-size: 100
       one-indexed-parameters: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username:
+    password:
+    properties:
+      mail:
+        from: "<Vortex ETL> vortexetl@andreiromila.com"
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 # Application related configurations
 application:

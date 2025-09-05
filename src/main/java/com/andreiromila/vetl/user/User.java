@@ -45,9 +45,12 @@ public class User implements UserDetails {
     @Transient
     private String avatarUrl;
 
-    // Spring security fields
-    private boolean enabled = true;
+    private boolean enabled;
 
+    private String emailActivationCode;
+    private Instant emailValidatedAt;
+
+    // Spring security fields
     @Transient
     private final boolean accountNonExpired = true;
 

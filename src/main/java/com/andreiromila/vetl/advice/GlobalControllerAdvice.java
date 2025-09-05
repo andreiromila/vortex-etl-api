@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @RestControllerAdvice
 public class GlobalControllerAdvice {
@@ -73,11 +74,18 @@ public class GlobalControllerAdvice {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException exception, HttpServletRequest request) {
 
-        final List<ValidationError> validationMessages = exception.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(ValidationError::new)
+        // Procesa los errores a nivel de campo
+        final List<ValidationError> fieldErrors = exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> new ValidationError(error.getField(), error.getDefaultMessage(), error.getRejectedValue()))
                 .toList();
+
+        // Procesa los errores a nivel de objeto/clase
+        final List<ValidationError> globalErrors = exception.getBindingResult().getGlobalErrors().stream()
+                .map(error -> new ValidationError(error.getObjectName(), error.getDefaultMessage(), null))
+                .toList();
+
+        // Combina ambas listas de errores
+        List<ValidationError> validationMessages = Stream.concat(fieldErrors.stream(), globalErrors.stream()).toList();
 
         // Create the data for the output
         final ErrorResponse errorResponse = new ErrorResponse(400, "The provided information is invalid.", validationMessages, request.getServletPath());

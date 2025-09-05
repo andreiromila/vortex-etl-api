@@ -1,6 +1,7 @@
 package com.andreiromila.vetl.user;
 
 import com.andreiromila.vetl.AbstractDatabaseTest;
+import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.role.RoleRepository;
 import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
@@ -33,9 +34,12 @@ public class UserServiceTest extends AbstractDatabaseTest {
 
     UserService userService;
 
+    @MockitoBean
+    EmailService emailService;
+
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, roleRepository, bcrypt, storageService);
+        userService = new UserService(userRepository, roleRepository, bcrypt, storageService, emailService);
     }
 
     @Test
@@ -64,30 +68,13 @@ public class UserServiceTest extends AbstractDatabaseTest {
 
         UserCreateRequest request = getUserCreateRequest();
 
-        User createdUser = userService.createUser(request);
+        User createdUser = userService.createUserWithInvitation(request);
 
         // The user also must have an id from the database
         assertThat(createdUser.getId()).isNotNull();
     }
 
-    @Test
-    void createUser_withValidData_encryptsPassword() {
-
-        UserCreateRequest request = getUserCreateRequest();
-
-        User createdUser = userService.createUser(request);
-        User persistedUser = userRepository.findById(createdUser.getId()).orElseThrow();
-
-        assertThat(persistedUser.getPassword())
-                .isNotEqualTo("Pa$$w0rd!")
-                .startsWith("$2a$")
-                .satisfies(encodedPassword ->
-                        assertThat(bcrypt.matches("Pa$$w0rd!", encodedPassword))
-                                .as("Password verification with BCrypt")
-                                .isTrue());
-    }
-
     private static @NotNull UserCreateRequest getUserCreateRequest() {
-        return new UserCreateRequest("John Doe.", "john", "john@example.com", "Pa$$w0rd!", Set.of(3L));
+        return new UserCreateRequest("John Doe.", "john", "john@example.com", Set.of(3L));
     }
 }

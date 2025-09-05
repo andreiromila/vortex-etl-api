@@ -152,6 +152,10 @@ public class SecurityConfig {
         // User registration is allowed for any user
         registry.requestMatchers(HttpMethod.POST, "/api/v1/login").permitAll();
 
+        // Allow public access to the activation endpoints (GET for validation, POST for commitment)
+        registry.requestMatchers(HttpMethod.GET, "/api/v1/users/{username}/activations/{token}").permitAll();
+        registry.requestMatchers(HttpMethod.POST, "/api/v1/users/{username}/activations").permitAll();
+
         // Everything else must be authenticated
         registry.anyRequest().authenticated();
 

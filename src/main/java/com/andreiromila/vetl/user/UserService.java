@@ -1,10 +1,15 @@
 package com.andreiromila.vetl.user;
 
+import com.andreiromila.vetl.exceptions.HttpBadRequestException;
+import com.andreiromila.vetl.exceptions.HttpGoneException;
+import com.andreiromila.vetl.exceptions.HttpNotFoundException;
+import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.role.Role;
 import com.andreiromila.vetl.role.RoleRepository;
 import com.andreiromila.vetl.role.UserRole;
 import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
+import com.andreiromila.vetl.utils.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -55,21 +61,29 @@ public class UserService implements UserDetailsService {
     private final FileStorageService fileStorageService;
 
     /**
+     * Service for sending the activation link.
+     */
+    private final EmailService emailService;
+
+    /**
      * Constructs a UserService with required dependencies
      *
      * @param userRepository  {@link UserRepository} The user repository bean
      * @param roleRepository  {@link RoleRepository} The role repository bean
      * @param passwordEncoder {@link PasswordEncoder} The password encoder bean
      * @param fileStorageService {@link FileStorageService} Service for file storage operations.
+     * @param emailService {@link EmailService} Service for sending the activation link.
      */
     public UserService(final UserRepository userRepository,
                        final RoleRepository roleRepository,
                        final PasswordEncoder passwordEncoder,
-                       final FileStorageService fileStorageService) {
+                       final FileStorageService fileStorageService,
+                       final EmailService emailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
+        this.emailService = emailService;
     }
 
     /**
@@ -111,7 +125,7 @@ public class UserService implements UserDetailsService {
      * @return Persisted user entity with generated fields
      */
     @Transactional
-    public User createUser(final UserCreateRequest request) {
+    public User createUserWithInvitation(final UserCreateRequest request) {
 
         // Create the user aggregate
         final User user = new User();
@@ -119,11 +133,11 @@ public class UserService implements UserDetailsService {
         // Set basic fields
         user.setUsername(request.username());
         user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
         user.setFullName(request.fullName());
 
         // Security flags
-        user.setEnabled(true);
+        user.setPassword(null);
+        user.setEnabled(false);
 
         // Timestamps
         user.setCreatedAt(Instant.now());
@@ -137,7 +151,103 @@ public class UserService implements UserDetailsService {
             userRepository.insertUserRoles(savedUser.getId(), request.roles());
         }
 
-        return savedUser;
+        // Now, generate and send the invitation for the newly created user
+        return sendActivationEmailTo(savedUser.getUsername());
+    }
+
+    /**
+     * Generates a new activation code for an existing, unactivated user and sends a new invitation email.
+     * Invalidates any previously sent activation codes.
+     *
+     * @param username {@link String} The username to whom to send the activation email
+     * @return The user
+     */
+    @Transactional
+    public User sendActivationEmailTo(String username) {
+
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new HttpNotFoundException("User not found."));
+
+        // Seguridad: Solo se puede reenviar si aún no ha sido activado
+        if (user.getEmailValidatedAt() != null) {
+            throw new HttpBadRequestException("This account has already been activated.");
+        }
+
+        // Generate a brand-new activation code to invalidate the last one
+        final String activationCode = StringUtils.generateRandomString(64);
+        user.setEmailActivationCode(activationCode);
+
+        // Al guardar, 'modified_at' se actualizará automáticamente,
+        // reseteando el temporizador de 24 horas.
+        final User updatedUser = userRepository.save(user);
+
+        // Todo: Configure this with the real domain (local / dev / prod)
+        // Reenvía el email con el nuevo enlace
+        String invitationLink = "http://localhost:5173/set-password?username=" + updatedUser.getUsername() + "&token=" + activationCode;
+        String emailBody = "Here is your new link to complete your Vortex ETL registration: \n" + invitationLink + "\nThis link will expire in 24 hours.";
+
+        emailService.sendSimpleMessage(updatedUser.getEmail(), "New Vortex ETL Registration Link", emailBody);
+
+        return updatedUser;
+
+    }
+
+    /**
+     * Validates that an activation token is active and usable without modifying any data.
+     * Throws exceptions if the token is invalid for any reason.
+     *
+     * @param username       The username associated with the token.
+     * @param activationCode The activation token to check.
+     */
+    @Transactional(readOnly = true)
+    public void validateActivationToken(String username, String activationCode) {
+
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new HttpNotFoundException("This activation link is invalid.")); // 404
+
+        if (user.getEmailValidatedAt() != null) {
+            throw new HttpNotFoundException("This activation link has already been used."); // 404
+        }
+
+        final Instant tokenExpiryTime = user.getModifiedAt().plus(24, ChronoUnit.HOURS);
+        if (tokenExpiryTime.isBefore(Instant.now())) {
+            // Usamos un 410 Gone, que es semánticamente perfecto para un recurso que existió pero ya no está disponible.
+            throw new HttpGoneException("This activation link has expired.");
+        }
+
+        if (user.getEmailActivationCode() == null || ! user.getEmailActivationCode().equals(activationCode)) {
+            throw new HttpNotFoundException("This activation link is invalid."); // 404
+        }
+
+        // Si no se lanza ninguna excepción, el token es válido.
+    }
+
+    /**
+     * Activates a user account by validating the token AND setting a new password.
+     * This method commits changes to the database.
+     *
+     * @param username {@link String} The username to be activated
+     * @param activationCode {@link String} The activation code
+     * @param password {@link String} The password to be set
+     * @return {@link User} The activated user
+     */
+    @Transactional
+    public User activateUserAccount(String username, String activationCode, String password) {
+
+        // La validación se ejecuta de nuevo para garantizar la integridad,
+        // por si el usuario esperó mucho tiempo entre la carga de la página y el envío del formulario.
+        validateActivationToken(username, activationCode);
+
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new HttpNotFoundException("User not found."));
+
+        // Establece la contraseña y activa la cuenta
+        user.setPassword(passwordEncoder.encode(password));
+        user.setEnabled(true);
+        user.setEmailValidatedAt(Instant.now());
+        user.setEmailActivationCode(null);
+
+        return userRepository.save(user);
     }
 
     /**
