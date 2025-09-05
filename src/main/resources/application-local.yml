@@ -19,6 +19,13 @@ application:
       - "Authorization"
       - "Content-Type"
       - "User-Agent"
+
+    # The list of headers to be exposed to Axios, if this is
+    # not set Axios CANNOT access the Location header on 201
+    # Created responses!
+    exposed-headers:
+      - "Authorization"
+      - "Location"
     allow-credentials: true
     max-age: 3600
 

@@ -10,7 +10,9 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
@@ -59,17 +61,21 @@ public class UserAvatarIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void uploadUserAvatar_asAdmin_returnsHttp200Ok() throws Exception {
+    void uploadUserAvatar_asAdmin_returnsHttp201Created() throws Exception {
         // Given
         User admin = login("admin.user", 1L); // Login with ADMIN role
         User targetUser = userRepository.save(AggregatesFactory.createUser("target.user"));
+
+        String expectedLocationPattern = minioContainer.getS3URL() + "/vortex-avatars/";
 
         // When
         mvc.perform(MockMvcRequestBuilders.multipart("/api/v1/users/{username}/avatar", targetUser.getUsername())
                         .file(avatarFile)
                         .headers(getAuthHeadersForUser(admin)))
                 .andExpect(status().isCreated())
-                .andExpect(header().exists(HttpHeaders.LOCATION));
+                .andExpect(header().exists(HttpHeaders.LOCATION))
+                .andExpect(header().string(HttpHeaders.LOCATION, startsWith(expectedLocationPattern)))
+                .andExpect(jsonPath("$").doesNotExist());
 
         // Then
         User updatedTargetUser = userRepository.findById(targetUser.getId()).orElseThrow();

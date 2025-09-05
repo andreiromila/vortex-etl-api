@@ -50,6 +50,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(corsProperties.allowedMethods());
         configuration.setAllowedHeaders(corsProperties.allowedHeaders());
         configuration.setAllowCredentials(corsProperties.allowCredentials());
+        configuration.setExposedHeaders(corsProperties.exposedHeaders());
         configuration.setMaxAge(corsProperties.maxAge());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

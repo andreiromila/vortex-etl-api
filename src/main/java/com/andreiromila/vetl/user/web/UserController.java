@@ -2,7 +2,6 @@ package com.andreiromila.vetl.user.web;
 
 import com.andreiromila.vetl.exceptions.HttpBadRequestException;
 import com.andreiromila.vetl.responses.CustomPage;
-import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.User;
 import com.andreiromila.vetl.user.UserService;
 import jakarta.validation.Valid;
@@ -45,19 +44,12 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * Service for file storage.
-     */
-    private final FileStorageService fileStorageService;
-
-    /**
      * Constructs the controller with a dependency-injected UserService.
      *
-     * @param userService        {@link UserService} Service layer for user operations.
-     * @param fileStorageService {@link FileStorageService} Service for file storage.
+     * @param userService {@link UserService} Service layer for user operations.
      */
-    public UserController(final UserService userService, final FileStorageService fileStorageService) {
+    public UserController(final UserService userService) {
         this.userService = userService;
-        this.fileStorageService = fileStorageService;
     }
 
     /**
@@ -110,7 +102,6 @@ public class UserController {
      * @param query    {@link String} An optional search term to filter users. The search is case-insensitive.
      * @param pageable {@link Pageable} A Spring Data Pageable object containing pagination and
      *                 sorting information provided via URL parameters (e.g., ?page=1&size=10&sort=username,asc).
-     *
      * @return A {@link ResponseEntity} containing a {@link CustomPage} of {@link UserBasicResponse} objects.
      */
     @GetMapping
@@ -149,23 +140,17 @@ public class UserController {
     public ResponseEntity<Void> uploadAvatarForUser(@PathVariable String username,
                                                     @RequestParam("file") MultipartFile file) {
 
-        // Load the user
-        final User user = userService.loadUserByUsername(username);
-
         // Validate file presence and size (e.g., max 5MB)
         if (file.isEmpty() || file.getSize() > 5 * 1024 * 1024) {
             throw new HttpBadRequestException("File is empty or exceeds the 5MB limit.");
         }
 
-        // Upload the file via the storage service to get its unique key
-        String avatarKey = fileStorageService.uploadFile(file);
-
         // Update the user's record in the database with the new key
-        userService.updateAvatarKey(user.getId(), avatarKey);
+        final String publicAvatarUrl = userService.updateAvatarKey(username, file);
 
         // Returns the 201 created
         return ResponseEntity.created(
-                URI.create(fileStorageService.getPublicFileUrl(avatarKey))
+                URI.create(publicAvatarUrl)
         ).build();
     }
 

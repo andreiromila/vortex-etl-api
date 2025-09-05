@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.List;
@@ -214,15 +215,42 @@ public class UserService implements UserDetailsService {
     }
 
     /**
-     * Updates the avatar key for a user in the database.
+     * Updates the avatar for a user identified by their username. This method
+     * contains the complete, transactional business logic for the operation.
+     * It performs a lightweight query to find the user, avoiding the overhead
+     * of loading associated roles.
      *
-     * @param userId    {@link Long} The ID of the user to update.
-     * @param avatarKey {@link String} The new object key for the avatar file.
+     * @param username {@link String} The username of the user to update.
+     * @param file     {@link MultipartFile} The new avatar file.
+     *
+     * @return The public URL of the newly uploaded avatar.
+     *
+     * @throws UsernameNotFoundException if a user with the given username does not exist.
      */
     @Transactional
-    public void updateAvatarKey(Long userId, String avatarKey) {
-        // Delegate the update operation to the repository
-        userRepository.updateAvatarKey(userId, avatarKey);
+    public String updateAvatarKey(String username, MultipartFile file) {
+
+        // Find the user or throw an exception if not found
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("No user found with username: " + username));
+
+        // Get the current avatar key to delete it later
+        final String oldAvatarKey = user.getAvatarKey();
+
+        // Upload the new file to get the new key
+        String newAvatarKey = fileStorageService.uploadFile(file);
+
+        // Update the database with the new key. This is the core transactional step.
+        // Si esta operación falla, toda la transacción hará rollback.
+        userRepository.updateAvatarKey(user.getId(), newAvatarKey);
+
+        // If the database update was successful and there was an old avatar, delete it.
+        // This operation is outside the core transaction in a sense, but happens only on commit.
+        fileStorageService.deleteFile(oldAvatarKey);
+
+        // Return the public URL for the controller to build the response
+        return fileStorageService.getPublicFileUrl(newAvatarKey);
+
     }
 
     /**

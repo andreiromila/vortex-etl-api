@@ -3,6 +3,8 @@ package com.andreiromila.vetl.storage;
 import com.andreiromila.vetl.properties.MinioProperties;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,6 +14,7 @@ import java.util.UUID;
  * Service layer for abstracting file storage operations with MinIO.
  * It handles uploading files and generating public URLs for them.
  */
+@Slf4j
 @Service
 public class FileStorageService {
 
@@ -57,6 +60,36 @@ public class FileStorageService {
             return objectName;
         } catch (Exception e) {
             throw new RuntimeException("Error uploading file to MinIO", e);
+        }
+    }
+
+    /**
+     * Deletes an object from the configured MinIO bucket.
+     * It will not throw an error if the object does not exist.
+     *
+     * @param objectName {@link String} The unique key of the object to delete.
+     */
+    public void deleteFile(String objectName) {
+        // Don't attempt to delete if the key is null or empty
+        if (objectName == null || objectName.isBlank()) {
+            return;
+        }
+
+        try {
+            // Build the arguments for the removeObject call
+            RemoveObjectArgs removeObjectArgs = RemoveObjectArgs.builder()
+                    .bucket(properties.bucketName())
+                    .object(objectName)
+                    .build();
+
+            // Execute the deletion
+            minioClient.removeObject(removeObjectArgs);
+
+        } catch (Exception e) {
+            // Log the error but don't rethrow. The main goal is to upload the new file,
+            // so we don't want the process to fail if for some reason the old file can't be deleted.
+            log.error("Could not delete file from MinIO: {}", objectName);
+            log.error(e.getMessage(), e);
         }
     }
 

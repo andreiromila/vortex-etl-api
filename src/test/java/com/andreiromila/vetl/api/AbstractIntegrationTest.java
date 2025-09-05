@@ -57,11 +57,11 @@ public abstract class AbstractIntegrationTest {
      */
     public static final String SPRING_BOOT_AGENT = "SpringBoot Integration-Tests Agent";
 
-    static MySQLContainer<?> mySqlContainer =
+    protected static MySQLContainer<?> mySqlContainer =
             new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
                     .withReuse(true);
 
-    static MinIOContainer minioContainer =
+    protected static MinIOContainer minioContainer =
             new MinIOContainer("minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1")
                     .withReuse(true);
 
