@@ -1,4 +1,4 @@
-package com.andreiromila.vetl.properties;
+package com.andreiromila.vetl.storage;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

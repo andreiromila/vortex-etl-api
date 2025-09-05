@@ -1,6 +1,5 @@
 package com.andreiromila.vetl.storage;
 
-import com.andreiromila.vetl.properties.MinioProperties;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;

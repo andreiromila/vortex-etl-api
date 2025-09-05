@@ -1,6 +1,5 @@
-package com.andreiromila.vetl.config;
+package com.andreiromila.vetl.storage;
 
-import com.andreiromila.vetl.properties.MinioProperties;
 import io.minio.MinioClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
