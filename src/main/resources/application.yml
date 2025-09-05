@@ -26,7 +26,7 @@ spring:
     password:
     properties:
       mail:
-        from: "<Vortex ETL> vortexetl@andreiromila.com"
+        from: vortexetl@andreiromila.com
         smtp:
           auth: true
           starttls:
