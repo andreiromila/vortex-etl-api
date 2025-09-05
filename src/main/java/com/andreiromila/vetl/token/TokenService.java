@@ -126,7 +126,7 @@ public class TokenService {
         final Token token = repository.findById(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("No token was found with id: %s".formatted(uuid)));
 
-        if ( ! token.enable()) {
+        if (!token.enable()) {
             throw new IllegalArgumentException("The provided token has been disabled by the user or a system administrator.");
         }
 
@@ -161,7 +161,25 @@ public class TokenService {
         );
     }
 
+    /**
+     * Retrieves a paginated list of all access tokens in the system.
+     * This method is intended for administrative use.
+     *
+     * @param pageable {@link Pageable} The pagination and sorting information.
+     * @return A {@link Page} of all {@link Token} entities.
+     */
     public Page<Token> findAll(final Pageable pageable) {
         return repository.findAll(pageable);
+    }
+
+    /**
+     * Retrieves a paginated list of access tokens for a specific user.
+     *
+     * @param username {@link String} The username to filter tokens by.
+     * @param pageable {@link Pageable} The pagination and sorting information.
+     * @return A {@link Page} of {@link Token} entities for the specified user.
+     */
+    public Page<Token> findByUsername(String username, Pageable pageable) {
+        return repository.findByUsername(username, pageable);
     }
 }
