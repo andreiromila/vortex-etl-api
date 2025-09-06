@@ -1,6 +1,9 @@
 package com.andreiromila.vetl.utils;
 
 import java.security.SecureRandom;
+import java.text.Normalizer;
+import java.util.Locale;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -24,6 +27,13 @@ public class StringUtils {
     };
 
     /**
+     *
+     */
+    private static final Pattern WHITESPACE = Pattern.compile("\\s");
+    private static final Pattern NON_LATIN = Pattern.compile("[^\\w.-]");
+    private static final Pattern EDGES_DASHES = Pattern.compile("(^-|-$)");
+
+    /**
      * Generates a secure random string
      *
      * @param size {@link Integer} The size of the string
@@ -37,4 +47,29 @@ public class StringUtils {
                 .collect(Collectors.joining());
     }
 
+    /**
+     * Cleans and sanitizes a filename to make it URL-safe.
+     * <p>
+     * This process involves:
+     * - Replacing whitespace with hyphens.
+     * - Removing all characters that are not alphanumeric, hyphens, or dots.
+     * - Converting to lowercase.
+     *
+     * @param filename {@link String} The original filename.
+     * @return A URL-safe "slugified" version of the filename.
+     */
+    public static String sanitizeFilename(String filename) {
+
+        if (filename == null || filename.isBlank()) {
+            return "";
+        }
+
+        final String noWhitespace = WHITESPACE.matcher(filename).replaceAll("-");
+        final String normalized = Normalizer.normalize(noWhitespace, Normalizer.Form.NFD);
+        final String slug = NON_LATIN.matcher(normalized).replaceAll("");
+
+        return EDGES_DASHES.matcher(slug)
+                    .replaceAll("")
+                    .toLowerCase(Locale.ENGLISH);
+    }
 }

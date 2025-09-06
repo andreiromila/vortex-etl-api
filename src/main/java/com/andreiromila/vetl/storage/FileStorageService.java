@@ -9,6 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
+import static com.andreiromila.vetl.utils.StringUtils.sanitizeFilename;
+
 /**
  * Service layer for abstracting file storage operations with MinIO.
  * It handles uploading files and generating public URLs for them.
@@ -46,8 +48,12 @@ public class FileStorageService {
      * @throws RuntimeException if the upload fails.
      */
     public String uploadFile(MultipartFile file) {
+
         try {
-            String objectName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+            final String sanitizedFilename = sanitizeFilename(file.getOriginalFilename());
+            final String objectName = UUID.randomUUID() + "_" + sanitizedFilename;
+
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(properties.bucketName())
