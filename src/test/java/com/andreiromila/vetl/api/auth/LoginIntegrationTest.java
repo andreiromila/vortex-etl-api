@@ -102,7 +102,7 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
     void login_withValidCredentials_returnsOkResponse() {
 
         // Given we have a user
-        User john = userService.createUserWithInvitation(
+        User john = userService.createUser(
                 getUserCreateRequest()
         );
 
@@ -141,7 +141,7 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
     void login_withDisabledUser_returnsUnauthorized() {
 
         // Given we have an unverified user
-        User john = userService.createUserWithInvitation(
+        User john = userService.createUser(
                 getUserCreateRequest()
         );
 

@@ -1,15 +1,15 @@
 package com.andreiromila.vetl.user;
 
-import com.andreiromila.vetl.exceptions.HttpBadRequestException;
 import com.andreiromila.vetl.exceptions.HttpGoneException;
 import com.andreiromila.vetl.exceptions.HttpNotFoundException;
-import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.role.Role;
 import com.andreiromila.vetl.role.RoleRepository;
 import com.andreiromila.vetl.role.UserRole;
 import com.andreiromila.vetl.storage.FileStorageService;
+import com.andreiromila.vetl.user.event.UserCreatedEvent;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
 import com.andreiromila.vetl.utils.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -61,9 +61,9 @@ public class UserService implements UserDetailsService {
     private final FileStorageService fileStorageService;
 
     /**
-     * Service for sending the activation link.
+     * Event publisher.
      */
-    private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Constructs a UserService with required dependencies
@@ -72,18 +72,18 @@ public class UserService implements UserDetailsService {
      * @param roleRepository  {@link RoleRepository} The role repository bean
      * @param passwordEncoder {@link PasswordEncoder} The password encoder bean
      * @param fileStorageService {@link FileStorageService} Service for file storage operations.
-     * @param emailService {@link EmailService} Service for sending the activation link.
+     * @param eventPublisher {@link ApplicationEventPublisher} Event publisher.
      */
     public UserService(final UserRepository userRepository,
                        final RoleRepository roleRepository,
                        final PasswordEncoder passwordEncoder,
                        final FileStorageService fileStorageService,
-                       final EmailService emailService) {
+                       final ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
-        this.emailService = emailService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -125,7 +125,7 @@ public class UserService implements UserDetailsService {
      * @return Persisted user entity with generated fields
      */
     @Transactional
-    public User createUserWithInvitation(final UserCreateRequest request) {
+    public User createUser(final UserCreateRequest request) {
 
         // Create the user aggregate
         final User user = new User();
@@ -143,6 +143,10 @@ public class UserService implements UserDetailsService {
         user.setCreatedAt(Instant.now());
         user.setModifiedAt(Instant.now());
 
+        // Generate a brand-new activation code to invalidate the last one
+        final String activationCode = StringUtils.generateRandomString(64);
+        user.setEmailActivationCode(activationCode);
+
         // No default roles
         final User savedUser = userRepository.save(user);
 
@@ -151,45 +155,12 @@ public class UserService implements UserDetailsService {
             userRepository.insertUserRoles(savedUser.getId(), request.roles());
         }
 
+        // Broadcast the event now - the listeners
+        // should send the email and audit or whatever ...
+        eventPublisher.publishEvent(new UserCreatedEvent(this, savedUser));
+
         // Now, generate and send the invitation for the newly created user
-        return sendActivationEmailTo(savedUser.getUsername());
-    }
-
-    /**
-     * Generates a new activation code for an existing, unactivated user and sends a new invitation email.
-     * Invalidates any previously sent activation codes.
-     *
-     * @param username {@link String} The username to whom to send the activation email
-     * @return The user
-     */
-    @Transactional
-    public User sendActivationEmailTo(String username) {
-
-        final User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new HttpNotFoundException("User not found."));
-
-        // Seguridad: Solo se puede reenviar si aún no ha sido activado
-        if (user.getEmailValidatedAt() != null) {
-            throw new HttpBadRequestException("This account has already been activated.");
-        }
-
-        // Generate a brand-new activation code to invalidate the last one
-        final String activationCode = StringUtils.generateRandomString(64);
-        user.setEmailActivationCode(activationCode);
-
-        // Al guardar, 'modified_at' se actualizará automáticamente,
-        // reseteando el temporizador de 24 horas.
-        final User updatedUser = userRepository.save(user);
-
-        // Todo: Configure this with the real domain (local / dev / prod)
-        // Reenvía el email con el nuevo enlace
-        String invitationLink = "http://localhost:5173/set-password?username=" + updatedUser.getUsername() + "&token=" + activationCode;
-        String emailBody = "Here is your new link to complete your Vortex ETL registration: \n" + invitationLink + "\nThis link will expire in 24 hours.";
-
-        emailService.sendSimpleMessage(updatedUser.getEmail(), "New Vortex ETL Registration Link", emailBody);
-
-        return updatedUser;
-
+        return savedUser;
     }
 
     /**

@@ -1,7 +1,6 @@
 package com.andreiromila.vetl.user;
 
 import com.andreiromila.vetl.AbstractDatabaseTest;
-import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.role.RoleRepository;
 import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
@@ -9,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -34,12 +34,12 @@ public class UserServiceTest extends AbstractDatabaseTest {
 
     UserService userService;
 
-    @MockitoBean
-    EmailService emailService;
+    @Autowired
+    ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, roleRepository, bcrypt, storageService, emailService);
+        userService = new UserService(userRepository, roleRepository, bcrypt, storageService, eventPublisher);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class UserServiceTest extends AbstractDatabaseTest {
 
         UserCreateRequest request = getUserCreateRequest();
 
-        User createdUser = userService.createUserWithInvitation(request);
+        User createdUser = userService.createUser(request);
 
         // The user also must have an id from the database
         assertThat(createdUser.getId()).isNotNull();

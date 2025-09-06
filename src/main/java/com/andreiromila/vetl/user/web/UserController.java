@@ -81,7 +81,7 @@ public class UserController {
     public ResponseEntity<UserCreateResponse> create(@Valid @RequestBody UserCreateRequest request) {
 
         // Store the user into the database
-        final User user = userService.createUserWithInvitation(request);
+        final User user = userService.createUser(request);
 
         // Create the response body
         final UserCreateResponse responseBody = UserCreateResponse.from(user);

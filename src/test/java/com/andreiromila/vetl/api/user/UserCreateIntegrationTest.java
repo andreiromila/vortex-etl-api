@@ -25,7 +25,6 @@ import java.util.stream.IntStream;
 import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
 import static com.andreiromila.vetl.utils.StringUtils.generateRandomString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -74,16 +73,17 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void createUser_asAdmin_doesNotSetPasswordAndSendsInvitationEmail() {
+    void createUser_asAdmin_publishesEventAndTriggersInvitationEmail() {
+
         // Given un administrador está logueado
         loginAdmin("test.admin");
 
         // El cuerpo de la petición ya no lleva contraseña
         var body = """
                 {
-                    "fullName": "New User",
-                    "username": "new.user",
-                    "email": "new.user@example.com",
+                    "fullName": "Invited User",
+                    "username": "invited.user",
+                    "email": "invited.user@example.com",
                     "roles": [3]
                 }
                 """;
@@ -97,11 +97,9 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
 
         // Then la respuesta de la API es correcta
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        Long newUserId = response.getBody().id();
 
         // Y el usuario se ha guardado en la BBDD correctamente
-        User createdUser = userRepository.findById(newUserId).orElseThrow();
+        User createdUser = userRepository.findByUsername("invited.user").orElseThrow();
         assertThat(createdUser.getPassword()).isNull(); // La contraseña es nula
         assertThat(createdUser.isEnabled()).isFalse(); // El usuario está deshabilitado
         assertThat(createdUser.getEmailActivationCode()).isNotNull().hasSize(64); // Se ha generado un código
@@ -110,23 +108,24 @@ public class UserCreateIntegrationTest extends AbstractIntegrationTest {
         // --- VERIFICACIÓN DEL ENVÍO DE EMAIL ---
 
         // Creamos un ArgumentCaptor para capturar el cuerpo del email que se envió
-        ArgumentCaptor<String> emailBodyCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
 
-        // Verificamos que el método sendSimpleMessage fue llamado UNA VEZ
-        // con el email del nuevo usuario, un asunto específico, y capturamos el cuerpo.
-        // Usamos `timeout` por si el envío de email se hiciera asíncrono en el futuro.
+        // Verificamos que el email se ha enviado
         verify(emailService, timeout(1000).times(1))
-                .sendSimpleMessage(
-                        eq("new.user@example.com"),
-                        eq("New Vortex ETL Registration Link"),
-                        emailBodyCaptor.capture()
-                );
+                .sendActivationEmail(userCaptor.capture(), linkCaptor.capture());
 
-        // Ahora podemos hacer aserciones sobre el cuerpo del email capturado
-        String capturedEmailBody = emailBodyCaptor.getValue();
-        assertThat(capturedEmailBody).contains("http://localhost:5173/set-password");
-        assertThat(capturedEmailBody).contains("token=" + createdUser.getEmailActivationCode());
-        assertThat(capturedEmailBody).contains("username=" + createdUser.getUsername());
+        User capturedUser = userCaptor.getValue();
+        String capturedLink = linkCaptor.getValue();
+
+        // Comprueba que el usuario correcto fue pasado al servicio de email
+        assertThat(capturedUser.getId()).isEqualTo(createdUser.getId());
+        assertThat(capturedUser.getUsername()).isEqualTo("invited.user");
+
+        // Comprueba que el enlace de activación se construyó correctamente
+        assertThat(capturedLink).startsWith("http://localhost:5173/set-password");
+        assertThat(capturedLink).contains("username=invited.user");
+        assertThat(capturedLink).contains("token=" + createdUser.getEmailActivationCode());
     }
 
     @Test
