@@ -18,12 +18,34 @@ import java.util.Map;
 @Service
 public class EmailService {
 
+    /**
+     * The "From" address, injected from application properties.
+     */
     private final String fromEmail;
+
+    /**
+     * The public URL for the logo, injected from application properties.
+     */
     private final String logoUrl;
 
+    /**
+     * The {@link Configuration} bean for FreeMarker template processing.
+     */
     private final Configuration freemarkerConfig;
+
+    /**
+     * The {@link JavaMailSender} bean for sending emails.
+     */
     private final JavaMailSender emailSender;
 
+    /**
+     * Constructs the EmailService with required beans and properties.
+     *
+     * @param emailSender      The {@link JavaMailSender} bean for sending emails.
+     * @param freemarkerConfig The {@link Configuration} bean for FreeMarker template processing.
+     * @param from             The "From" address, injected from application properties.
+     * @param logoUrl          The public URL for the logo, injected from application properties.
+     */
     public EmailService(JavaMailSender emailSender,
                         Configuration freemarkerConfig,
                         @Value("${spring.mail.properties.mail.from}") String from,
@@ -36,6 +58,12 @@ public class EmailService {
         this.logoUrl = logoUrl;
     }
 
+    /**
+     * Composes and sends an account activation email to a new user.
+     *
+     * @param user           The {@link User} object representing the recipient.
+     * @param activationLink The unique URL the user will click to activate their account.
+     */
     public void sendActivationEmail(User user, String activationLink) {
 
         try {
@@ -53,7 +81,7 @@ public class EmailService {
             final MimeMessage message = emailSender.createMimeMessage();
             final MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail); //  #5046E5 - #5039F6
+            helper.setFrom(fromEmail);
             helper.setTo(user.getEmail());
 
             // Todo: Extract this to the configuration file
