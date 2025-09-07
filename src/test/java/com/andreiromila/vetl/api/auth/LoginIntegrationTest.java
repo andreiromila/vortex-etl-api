@@ -1,6 +1,7 @@
 package com.andreiromila.vetl.api.auth;
 
 import com.andreiromila.vetl.AbstractIntegrationTest;
+import com.andreiromila.vetl.audit.AuditEventListener;
 import com.andreiromila.vetl.auth.LoginResponse;
 import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.responses.ErrorResponse;
@@ -33,6 +34,12 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     EmailService emailService;
+
+    /**
+     * Prevent this listener to create a new log when we create users for testing
+     */
+    @MockitoBean
+    AuditEventListener auditEventListener;
 
     @Test
     void login_usingNullUsername_returnsUnauthorized() {

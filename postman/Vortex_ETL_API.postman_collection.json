@@ -927,7 +927,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"fullName\": \"John Doe\",\n    \"username\": \"john.doe\",\n    \"email\": \"andrei.romila@gmail.com\",\n    \"roles\": [\n        3\n    ]\n}",
+							"raw": "{\n    \"fullName\": \"Victor Fuentes\",\n    \"username\": \"victor.fuente6\",\n    \"email\": \"andrei.romila+26@gmail.com\",\n    \"roles\": [\n        3\n    ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1126,6 +1126,707 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"timestamp\": \"2025-09-05T14:17:08.337739+02:00\",\n    \"code\": 400,\n    \"message\": \"The provided information is invalid.\",\n    \"validationErrors\": [\n        {\n            \"field\": \"username\",\n            \"message\": \"The username is already taken.\",\n            \"value\": \"john.doe\"\n        },\n        {\n            \"field\": \"email\",\n            \"message\": \"The email is already taken.\",\n            \"value\": \"andrei.romila@gmail.com\"\n        },\n        {\n            \"field\": \"fullName\",\n            \"message\": \"size must be between 4 and 100\",\n            \"value\": \"Doe\"\n        }\n    ],\n    \"path\": \"/api/v1/users\"\n}"
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{bearerToken}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "User Activation",
+			"item": [
+				{
+					"name": "Token Validation",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Victor Fuentes\",\n    \"username\": \"victor.fuente\",\n    \"email\": \"andrei.romila+11@gmail.com\",\n    \"roles\": [\n        3\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/victor.fuentes/activations/R6K0AFUPRJ50H9JLIMGU3U06DRNPSXI41MCYXDTQFCNVGDC0PW35X99H4GTUYP41",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"victor.fuentes",
+								"activations",
+								"R6K0AFUPRJ50H9JLIMGU3U06DRNPSXI41MCYXDTQFCNVGDC0PW35X99H4GTUYP41"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "404 Invalid Token",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"fullName\": \"Victor Fuentes\",\n    \"username\": \"victor.fuente\",\n    \"email\": \"andrei.romila+11@gmail.com\",\n    \"roles\": [\n        3\n    ]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/victor.fuentes/activations/invalid-token-value",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"victor.fuentes",
+										"activations",
+										"invalid-token-value"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 06 Sep 2025 10:41:58 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"timestamp\": \"2025-09-06T12:41:58.806937+02:00\",\n    \"code\": 404,\n    \"message\": \"This activation link is invalid.\",\n    \"path\": \"/api/v1/users/victor.fuentes/activations/invalid-token-value\"\n}"
+						},
+						{
+							"name": "204 No Content",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"fullName\": \"Victor Fuentes\",\n    \"username\": \"victor.fuente\",\n    \"email\": \"andrei.romila+11@gmail.com\",\n    \"roles\": [\n        3\n    ]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/victor.fuentes/activations/R6K0AFUPRJ50H9JLIMGU3U06DRNPSXI41MCYXDTQFCNVGDC0PW35X99H4GTUYP41",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"victor.fuentes",
+										"activations",
+										"R6K0AFUPRJ50H9JLIMGU3U06DRNPSXI41MCYXDTQFCNVGDC0PW35X99H4GTUYP41"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 06 Sep 2025 10:42:39 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "410 Gone (token expired)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"fullName\": \"Victor Fuentes\",\n    \"username\": \"victor.fuente\",\n    \"email\": \"andrei.romila+11@gmail.com\",\n    \"roles\": [\n        3\n    ]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/victor.fuentes/activations/R6K0AFUPRJ50H9JLIMGU3U06DRNPSXI41MCYXDTQFCNVGDC0PW35X99H4GTUYP41",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"victor.fuentes",
+										"activations",
+										"R6K0AFUPRJ50H9JLIMGU3U06DRNPSXI41MCYXDTQFCNVGDC0PW35X99H4GTUYP41"
+									]
+								}
+							},
+							"status": "Gone",
+							"code": 410,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 06 Sep 2025 10:43:37 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"timestamp\": \"2025-09-06T12:43:37.683953+02:00\",\n    \"code\": 410,\n    \"message\": \"This activation link has expired.\",\n    \"path\": \"/api/v1/users/victor.fuentes/activations/R6K0AFUPRJ50H9JLIMGU3U06DRNPSXI41MCYXDTQFCNVGDC0PW35X99H4GTUYP41\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Token Activation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"BSE5221F24DLLXREJI19XGNKT7NYT1CTEIX5W7KSDC5E86OXG9NRPVUIMB5IJ0NZ\",\n    \"password\": \"Pa$$word1!\",\n    \"passwordConfirmation\": \"Pa$$word1!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/john.doe/activations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"john.doe",
+								"activations"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "400 Bad Request",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"BSE5221F24DLLXREJI19XGNKT7NYT1CTEIX5W7KSDC5E86OXG9NRPVUIMB5IJ0NZ\",\n    \"password\": \"password\",\n    \"passwordConfirmation\": \"doesn't matcH\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/john.doe/activations",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"john.doe",
+										"activations"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 06 Sep 2025 10:59:30 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "close"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"timestamp\": \"2025-09-06T12:59:30.476278+02:00\",\n    \"code\": 400,\n    \"message\": \"The provided information is invalid.\",\n    \"validationErrors\": [\n        {\n            \"field\": \"password\",\n            \"message\": \"Password must be strong.\",\n            \"value\": \"password\"\n        },\n        {\n            \"field\": \"userActivationRequest\",\n            \"message\": \"The passwords do not match.\",\n            \"value\": null\n        }\n    ],\n    \"path\": \"/api/v1/users/john.doe/activations\"\n}"
+						},
+						{
+							"name": "204 No Content",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"BSE5221F24DLLXREJI19XGNKT7NYT1CTEIX5W7KSDC5E86OXG9NRPVUIMB5IJ0NZ\",\n    \"password\": \"Pa$$word1!\",\n    \"passwordConfirmation\": \"Pa$$word1!\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/john.doe/activations",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"john.doe",
+										"activations"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 06 Sep 2025 11:00:07 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": null
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{bearerToken}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Audit Log",
+			"item": [
+				{
+					"name": "Recent Activity",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activity?size=5&page=1&sort=createdAt,desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"activity"
+							],
+							"query": [
+								{
+									"key": "size",
+									"value": "5"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt,desc"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200 Ok",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/activity?size=5&page=1&sort=createdAt,desc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"activity"
+									],
+									"query": [
+										{
+											"key": "size",
+											"value": "5"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "sort",
+											"value": "createdAt,desc"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 07 Sep 2025 11:34:33 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"actorUsername\": \"andrei.romila\",\n            \"actionType\": \"USER_CREATED\",\n            \"targetType\": \"USER\",\n            \"targetId\": \"273\",\n            \"targetDisplayName\": \"Victor Fuentes\",\n            \"details\": {\n                \"email\": \"andrei.romila+26@gmail.com\",\n                \"username\": \"victor.fuente6\"\n            },\n            \"createdAt\": \"2025-09-07T11:33:14Z\"\n        },\n        {\n            \"actorUsername\": \"andrei.romila\",\n            \"actionType\": \"USER_CREATED\",\n            \"targetType\": \"USER\",\n            \"targetId\": \"272\",\n            \"targetDisplayName\": \"Victor Fuentes\",\n            \"details\": {\n                \"email\": \"andrei.romila+25@gmail.com\",\n                \"username\": \"victor.fuente5\"\n            },\n            \"createdAt\": \"2025-09-07T11:33:07Z\"\n        },\n        {\n            \"actorUsername\": \"andrei.romila\",\n            \"actionType\": \"USER_CREATED\",\n            \"targetType\": \"USER\",\n            \"targetId\": \"271\",\n            \"targetDisplayName\": \"Victor Fuentes\",\n            \"details\": {},\n            \"createdAt\": \"2025-09-07T11:32:13Z\"\n        },\n        {\n            \"actorUsername\": \"andrei.romila\",\n            \"actionType\": \"USER_CREATED\",\n            \"targetType\": \"USER\",\n            \"targetId\": \"270\",\n            \"targetDisplayName\": \"Victor Fuentes\",\n            \"details\": {},\n            \"createdAt\": \"2025-09-07T11:32:07Z\"\n        },\n        {\n            \"actorUsername\": \"andrei.romila\",\n            \"actionType\": \"USER_CREATED\",\n            \"targetType\": \"USER\",\n            \"targetId\": \"269\",\n            \"targetDisplayName\": \"Victor Fuentes\",\n            \"details\": {},\n            \"createdAt\": \"2025-09-07T11:15:56Z\"\n        }\n    ],\n    \"size\": 5,\n    \"page\": 1,\n    \"totalElements\": 5,\n    \"totalPages\": 1\n}"
 						}
 					]
 				}
