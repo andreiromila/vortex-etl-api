@@ -1,6 +1,6 @@
 package com.andreiromila.vetl.api.token;
 
-import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.AbstractIntegrationTest;
 import com.andreiromila.vetl.responses.CustomPage;
 import com.andreiromila.vetl.responses.ErrorResponse;
 import com.andreiromila.vetl.token.web.TokenBasicResponse;

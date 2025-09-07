@@ -1,6 +1,6 @@
 package com.andreiromila.vetl.api.auth;
 
-import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.AbstractIntegrationTest;
 import com.andreiromila.vetl.auth.LoginResponse;
 import com.andreiromila.vetl.mail.EmailService;
 import com.andreiromila.vetl.responses.ErrorResponse;

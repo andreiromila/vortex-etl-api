@@ -1,6 +1,6 @@
 package com.andreiromila.vetl.api.user;
 
-import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.AbstractIntegrationTest;
 import com.andreiromila.vetl.responses.CustomPage;
 import com.andreiromila.vetl.user.web.UserBasicResponse;
 import org.junit.jupiter.api.Test;

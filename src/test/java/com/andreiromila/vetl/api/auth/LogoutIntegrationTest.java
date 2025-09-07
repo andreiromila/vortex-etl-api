@@ -1,6 +1,6 @@
 package com.andreiromila.vetl.api.auth;
 
-import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.AbstractIntegrationTest;
 import com.andreiromila.vetl.responses.ErrorResponse;
 import com.andreiromila.vetl.token.TokenWithExpiration;
 import com.andreiromila.vetl.user.User;

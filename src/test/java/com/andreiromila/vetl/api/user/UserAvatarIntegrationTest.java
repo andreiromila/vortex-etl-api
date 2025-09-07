@@ -1,6 +1,6 @@
 package com.andreiromila.vetl.api.user;
 
-import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.AbstractIntegrationTest;
 import com.andreiromila.vetl.factories.AggregatesFactory;
 import com.andreiromila.vetl.user.User;
 import org.junit.jupiter.api.Test;

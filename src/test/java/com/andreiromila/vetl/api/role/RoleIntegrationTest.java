@@ -1,6 +1,6 @@
 package com.andreiromila.vetl.api.role;
 
-import com.andreiromila.vetl.api.AbstractIntegrationTest;
+import com.andreiromila.vetl.AbstractIntegrationTest;
 import com.andreiromila.vetl.responses.ErrorResponse;
 import com.andreiromila.vetl.role.web.RoleView;
 import org.junit.jupiter.api.Test;

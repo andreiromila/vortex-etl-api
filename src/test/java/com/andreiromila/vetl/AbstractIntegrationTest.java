@@ -1,4 +1,4 @@
-package com.andreiromila.vetl.api;
+package com.andreiromila.vetl;
 
 import com.andreiromila.vetl.token.TokenService;
 import com.andreiromila.vetl.token.TokenWithExpiration;
