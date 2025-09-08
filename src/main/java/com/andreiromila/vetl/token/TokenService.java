@@ -91,7 +91,7 @@ public class TokenService {
         final ZonedDateTime expiresAt = ZonedDateTime.ofInstant(expiration.toInstant(), ZoneId.systemDefault());
 
         // Return the login response with the token
-        return new TokenWithExpiration(compactToken, expiresAt);
+        return new TokenWithExpiration(token.uuid(), compactToken, expiresAt);
     }
 
     /**

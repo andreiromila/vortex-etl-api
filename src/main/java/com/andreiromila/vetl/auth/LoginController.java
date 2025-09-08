@@ -72,7 +72,7 @@ public class LoginController {
 
         // Return the response
         return ResponseEntity.ok(
-                new LoginResponse(token.token(), token.expiresAt())
+                new LoginResponse(token.tokenUuid(), token.token(), token.expiresAt())
         );
     }
 

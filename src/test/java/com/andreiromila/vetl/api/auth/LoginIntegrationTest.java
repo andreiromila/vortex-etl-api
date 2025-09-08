@@ -135,6 +135,7 @@ public class LoginIntegrationTest extends AbstractIntegrationTest {
 
         // And a token with an expiration timestamp greater than now
         assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().tokenUuid()).isNotBlank();
         assertThat(response.getBody().token()).isNotBlank();
         assertThat(response.getBody().expiresAt()).isAfter(ZonedDateTime.now());
 
