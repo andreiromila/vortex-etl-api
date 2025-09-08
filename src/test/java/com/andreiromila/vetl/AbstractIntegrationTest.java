@@ -22,6 +22,7 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -35,6 +36,8 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
@@ -117,6 +120,9 @@ public abstract class AbstractIntegrationTest {
 
     @Autowired
     protected TokenService tokenService;
+
+    @Autowired
+    protected PasswordEncoder passwordEncoder;
 
     @Autowired
     protected MockMvc mvc;
@@ -206,6 +212,26 @@ public abstract class AbstractIntegrationTest {
         final TokenWithExpiration tokenWithExpiration = tokenService.createToken(username, SPRING_BOOT_AGENT);
         addAuthorizationHeader(tokenWithExpiration.token());
         return authenticatedUser;
+    }
+
+    protected User loginWithPassword(String username, String rawPassword) {
+
+        final User user = createUserWithPassword(username, rawPassword);
+
+        final TokenWithExpiration token = tokenService.createToken(username, SPRING_BOOT_AGENT);
+        addAuthorizationHeader(token.token());
+        return user;
+    }
+
+    protected User createUserWithPassword(String username, String rawPassword) {
+
+        final User user = createUser(username);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setEmailValidatedAt(Instant.now().minus(1, ChronoUnit.DAYS));
+
+        userRepository.save(user);
+        userRepository.insertUserRole(user.getId(), 3L);
+        return user;
     }
 
 }

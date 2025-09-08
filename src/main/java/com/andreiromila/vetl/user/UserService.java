@@ -1,5 +1,6 @@
 package com.andreiromila.vetl.user;
 
+import com.andreiromila.vetl.exceptions.HttpBadRequestException;
 import com.andreiromila.vetl.exceptions.HttpGoneException;
 import com.andreiromila.vetl.exceptions.HttpNotFoundException;
 import com.andreiromila.vetl.role.Role;
@@ -9,7 +10,9 @@ import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.event.UserCreatedEvent;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
 import com.andreiromila.vetl.user.web.UserDetailsUpdateRequest;
+import com.andreiromila.vetl.user.web.UserPasswordChangeRequest;
 import com.andreiromila.vetl.utils.StringUtils;
+import jakarta.validation.Valid;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -397,5 +400,31 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
 
         // TODO: Publish a UserUpdatedEvent for the audit log.
+    }
+
+    /**
+     * Changes a user's password after verifying their current password.
+     * This operation is self-service and cannot be performed by an administrator on behalf of another user.
+     *
+     * @param username The username of the user changing their password.
+     * @param request  The DTO containing the current and new passwords.
+     * @throws HttpBadRequestException if the current password does not match.
+     */
+    @Transactional
+    public void changeUserPassword(String username, @Valid UserPasswordChangeRequest request) {
+
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new HttpNotFoundException("User not found: " + username));
+
+        // Critical security check: Verify the current password.
+        if (user.getPassword() == null || ! passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new HttpBadRequestException("Incorrect current password.");
+        }
+
+        // Encode and set the new password.
+        user.setPassword(passwordEncoder.encode(request.password()));
+        userRepository.save(user);
+
+        // TODO: Publish a UserPasswordChangedEvent for the audit log.
     }
 }

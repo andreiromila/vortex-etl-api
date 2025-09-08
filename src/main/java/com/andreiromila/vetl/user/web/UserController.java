@@ -131,6 +131,25 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Allows an authenticated user to change their own password.
+     * This endpoint is strictly for self-service; administrators
+     * cannot change other users' passwords.
+     *
+     * @param username The username of the user, must match the authenticated principal.
+     * @param request  The Dto with current and new password details.
+     * @return An HTTP 204 No Content response on success.
+     */
+    @PutMapping("/{username}/password")
+    @PreAuthorize("#username == principal.username")
+    public ResponseEntity<Void> changePassword(@PathVariable String username, @Valid @RequestBody UserPasswordChangeRequest request) {
+
+        // Change the password
+        userService.changeUserPassword(username, request);
+
+        // We don't need to return anything here
+        return ResponseEntity.noContent().build();
+    }
 
     /**
      * Searches for users based on a query string and returns a paginated result.

@@ -4,19 +4,20 @@ import com.andreiromila.vetl.validation.PasswordAware;
 import com.andreiromila.vetl.validation.PasswordsMatch;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 /**
- * Dto for the user account activation request.
- * Contains fields for username, token, and password confirmation.
- * This record is validated at the class level to ensure passwords match.
+ * Dto for a user's request to change their own password.
+ * Includes validation for a strong new password and
+ * ensures the confirmation matches.
  */
 @PasswordsMatch
-public record UserActivationRequest(
+public record UserPasswordChangeRequest(
 
+        /* The current user password to avoid someone with a
+         * stolen token changing the user password
+         */
         @NotBlank
-        @Size(min = 64, max = 64)
-        String token,
+        String currentPassword,
 
         /* The password must have at least 1 lower, 1 upper,
          * 1 number and 1 special character and at least 5
