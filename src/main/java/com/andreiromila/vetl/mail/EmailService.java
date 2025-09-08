@@ -5,7 +5,6 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -21,12 +20,7 @@ public class EmailService {
     /**
      * The "From" address, injected from application properties.
      */
-    private final String fromEmail;
-
-    /**
-     * The public URL for the logo, injected from application properties.
-     */
-    private final String logoUrl;
+    private final EmailProperties properties;
 
     /**
      * The {@link Configuration} bean for FreeMarker template processing.
@@ -43,19 +37,15 @@ public class EmailService {
      *
      * @param emailSender      The {@link JavaMailSender} bean for sending emails.
      * @param freemarkerConfig The {@link Configuration} bean for FreeMarker template processing.
-     * @param from             The "From" address, injected from application properties.
-     * @param logoUrl          The public URL for the logo, injected from application properties.
+     * @param properties       The {@link EmailProperties} configurations
      */
     public EmailService(JavaMailSender emailSender,
                         Configuration freemarkerConfig,
-                        @Value("${spring.mail.properties.mail.from}") String from,
-                        @Value("${spring.mail.properties.mail.logo-url}") String logoUrl) {
+                        EmailProperties properties) {
 
         this.emailSender = emailSender;
         this.freemarkerConfig = freemarkerConfig;
-
-        this.fromEmail = from;
-        this.logoUrl = logoUrl;
+        this.properties = properties;
     }
 
     /**
@@ -74,14 +64,14 @@ public class EmailService {
             final Map<String, Object> model = new HashMap<>();
             model.put("fullName", user.getFullName());
             model.put("activationLink", activationLink);
-            model.put("logoUrl", logoUrl);
+            model.put("logoUrl", properties.logoUrl());
 
             final String htmlBody = FreeMarkerTemplateUtils.processTemplateIntoString(template, model);
 
             final MimeMessage message = emailSender.createMimeMessage();
             final MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(properties.from(), properties.fromDisplayName());
             helper.setTo(user.getEmail());
 
             // Todo: Extract this to the configuration file

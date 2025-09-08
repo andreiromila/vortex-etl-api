@@ -8,10 +8,8 @@
 
 <body
   style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f3f4f6;">
-  <!-- CORREGIDO: gray-100 -->
 
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f3f4f6;">
-    <!-- CORREGIDO: gray-100 -->
     <tr>
       <td align="center">
         <table width="600" border="0" cellspacing="0" cellpadding="0"
@@ -27,7 +25,7 @@
                   <!-- Celda para el Logo -->
                   <td width="64" valign="middle">
                     <img width="48" height="48" alt="Vortex ETL Logo"
-                      src="https://andreiromila.com/vortexetl/web-app-manifest-192x192.png"
+                      src="${logoUrl}}"
                       style="display: block; border-radius: 8px;">
                   </td>
                   <!-- Celda para el Texto -->

@@ -35,6 +35,7 @@ class EmailServiceTest {
 
     // Test data
     final String FROM_EMAIL = "test@vortex.com";
+    final String FROM_DISPLAY_NAME = "Vortex ETL";
     final String LOGO_URL = "http://example.com/logo.png";
 
     @BeforeEach
@@ -44,8 +45,10 @@ class EmailServiceTest {
         freemarkerConfig.setClassForTemplateLoading(this.getClass(), "/templates/");
         freemarkerConfig.setDefaultEncoding("UTF-8");
 
+        EmailProperties properties = new EmailProperties(FROM_EMAIL, FROM_DISPLAY_NAME, LOGO_URL);
+
         // Instantiate the service with our mocks
-        emailService = new EmailService(mockEmailSender, freemarkerConfig, FROM_EMAIL, LOGO_URL);
+        emailService = new EmailService(mockEmailSender, freemarkerConfig, properties);
     }
 
     @Test
@@ -69,7 +72,7 @@ class EmailServiceTest {
         MimeMessage sentMessage = captor.getValue();
         assertThat(sentMessage.getSubject()).isEqualTo("Hey Test User FullName Complete Your Vortex ETL Registration");
         assertThat(sentMessage.getRecipients(MimeMessage.RecipientType.TO)[0].toString()).isEqualTo("test.user@example.com");
-        assertThat(sentMessage.getFrom()[0].toString()).isEqualTo(FROM_EMAIL);
+        assertThat(sentMessage.getFrom()[0].toString()).isEqualTo("Vortex ETL <test@vortex.com>");
     }
 
     @Test

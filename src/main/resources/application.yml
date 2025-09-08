@@ -26,8 +26,9 @@ spring:
     password:
     properties:
       mail:
+        from-display-name: Vortex ETL
         from: vortexetl@andreiromila.com
-        logo-url: http://localhost:9000/vortex-avatars/logos/logo.svg
+        logo-url: https://andreiromila.com/vortexetl/web-app-manifest-192x192.png
         smtp:
           auth: true
           starttls:
