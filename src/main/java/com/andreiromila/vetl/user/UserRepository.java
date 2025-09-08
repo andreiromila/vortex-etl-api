@@ -33,4 +33,13 @@ public interface UserRepository extends UserFilterRepository, ListCrudRepository
     @Query("UPDATE user SET avatar_key = :avatarKey WHERE id = :userId")
     void updateAvatarKey(@Param("userId") Long userId, @Param("avatarKey") String avatarKey);
 
+    /**
+     * Removes all roles for a given user
+     *
+     * @param user {@link Long} The user to remove all roles
+     */
+    @Modifying
+    @Query("DELETE FROM user_role WHERE user = :user")
+    void deleteUserRoles(Long user);
+
 }

@@ -8,6 +8,7 @@ import com.andreiromila.vetl.role.UserRole;
 import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.event.UserCreatedEvent;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
+import com.andreiromila.vetl.user.web.UserDetailsUpdateRequest;
 import com.andreiromila.vetl.utils.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -350,5 +351,51 @@ public class UserService implements UserDetailsService {
         }
         // Return the original user if no avatar key is present
         return user;
+    }
+
+    /**
+     * Updates the details of a user as a privileged operation by an administrator.
+     * This includes changing the full name, enabled status, and role.
+     *
+     * @param username The username of the user to be updated.
+     * @param request  The {@link UserDetailsUpdateRequest} DTO containing the new data.
+     */
+    @Transactional
+    public void updateUserDetailsByAdmin(String username, UserDetailsUpdateRequest request) {
+
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new HttpNotFoundException("User not found: " + username));
+
+        user.setFullName(request.fullName());
+        user.setEnabled(request.enabled());
+        userRepository.save(user);
+
+        userRepository.deleteUserRoles(user.getId());
+        userRepository.insertUserRole(user.getId(), request.roleId());
+
+        // TODO: Publish a UserUpdatedEvent for the audit log.
+    }
+
+    /**
+     * Updates the profile details for a regular user editing their own account.
+     * The scope of this operation is intentionally limited to non-privileged fields
+     * like 'fullName'. It explicitly ignores any role or status changes.
+     *
+     * @param username The username of the user updating their profile.
+     * @param request  The {@link UserDetailsUpdateRequest} DTO. Only 'fullName' will be used.
+     */
+    @Transactional
+    public void updateUserDetails(String username, UserDetailsUpdateRequest request) {
+
+        final User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new HttpNotFoundException("User not found: " + username));
+
+        // In this case ONLY the full name can be changed, the
+        // enabled flag and user roles cannot change here
+        user.setFullName(request.fullName());
+
+        userRepository.save(user);
+
+        // TODO: Publish a UserUpdatedEvent for the audit log.
     }
 }

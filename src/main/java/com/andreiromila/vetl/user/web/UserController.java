@@ -10,9 +10,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -90,6 +92,45 @@ public class UserController {
         return ResponseEntity.ok(responseBody);
 
     }
+
+    /**
+     * Updates a user's details.
+     * <p>
+     * The behavior of this endpoint is context-aware based on the authenticated principal:
+     * <ul>
+     *   <li>If the authenticated user is updating their own profile, only the full name is changed.</li>
+     *   <li>If the actor is an administrator updating another user, full name, role, and status are updated.</li>
+     * </ul>
+     * This logic is enforced by dispatching to different service methods based on the context.
+     *
+     * @param username The username of the user to be updated.
+     * @param request  The request body with the desired changes.
+     * @return An HTTP 204 No Content response on success.
+     */
+    @PutMapping("/{username}/details")
+    @PreAuthorize("#username == principal.username or hasRole('ADMIN')")
+    public ResponseEntity<Void> updateUserDetails(@PathVariable String username, @Valid @RequestBody UserDetailsUpdateRequest request) {
+
+        // The user can ONLY change their own full name, not the role and cannot disable themselves
+        final User authenticated = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (authenticated.getUsername().equals(username)) {
+            // Update the authenticated user full name only
+            userService.updateUserDetails(username, request);
+
+            // Just return ... nothing more to do here
+            // This is also used to stop the execution
+            return ResponseEntity.noContent().build();
+        }
+
+        // If we get here then we have an admin and the
+        // user they are trying to update is NOT themselves
+        userService.updateUserDetailsByAdmin(username, request);
+
+        // Now we can return the no content response as before
+        return ResponseEntity.noContent().build();
+    }
+
 
     /**
      * Searches for users based on a query string and returns a paginated result.
