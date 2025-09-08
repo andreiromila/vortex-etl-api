@@ -24,7 +24,7 @@ public class TokenController {
     /**
      * The allowed sorting columns for the user table
      */
-    public static final Set<String> SORTING_COLUMNS = Set.of("id", "username", "userAgent", "enable", "expiresAt");
+    public static final Set<String> SORTING_COLUMNS = Set.of("uuid", "username", "userAgent", "enable", "expiresAt");
 
     private final TokenService tokenService;
 

@@ -11,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Comparator;
 import java.util.stream.IntStream;
 
 import static com.andreiromila.vetl.factories.AggregatesFactory.createUser;
@@ -99,5 +100,35 @@ public class TokenFilterIntegrationTest extends AbstractIntegrationTest {
 
         // Then the request is forbidden
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void filterTokens_withValidAndInvalidSortColumns_appliesSafeSort() {
+        // Given un administrador está logueado
+        loginAdmin("test.admin");
+
+        // Y tenemos varios tokens creados (los UUIDs son impredecibles en orden)
+        tokenService.createToken("test.admin", SPRING_BOOT_AGENT);
+        tokenService.createToken("test.admin", SPRING_BOOT_AGENT);
+        tokenService.createToken("test.admin", SPRING_BOOT_AGENT);
+
+        // When el admin pide la lista intentando ordenar por una columna válida ('uuid')
+        // y una inválida que solía existir ('id').
+        ResponseEntity<CustomPage<TokenBasicResponse>> response = http.exchange(
+                "/api/v1/users/{username}/access-tokens?sort=uuid,asc&sort=id,desc",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<>() {},
+                "test.admin"
+        );
+
+        // Then la petición es exitosa
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        CustomPage<TokenBasicResponse> page = response.getBody();
+        assertThat(page).isNotNull();
+
+        // Y el contenido está ordenado por la columna VÁLIDA ('uuid')
+        assertThat(page.content()).hasSize(4); // 3 creados + 1 del login
+        assertThat(page.content()).isSortedAccordingTo(Comparator.comparing(TokenBasicResponse::uuid));
     }
 }
