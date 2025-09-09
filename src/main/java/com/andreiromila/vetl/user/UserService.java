@@ -95,12 +95,12 @@ public class UserService implements UserDetailsService {
      *
      * @param username {@link String} The username to search for
      * @return The UserDetails
-     * @throws UsernameNotFoundException If the user was not found
+     * @throws HttpNotFoundException If the user was not found
      */
     @Override
-    public User loadUserByUsername(final String username) throws UsernameNotFoundException {
+    public User loadUserByUsername(final String username) {
         final User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("No user found with username: " + username));
+                .orElseThrow(() -> new HttpNotFoundException("No user found with username: " + username));
 
         // Get all role references for the current user
         final Set<UserRole> roleReferences = roleRepository.findUserRoleByUsers(List.of(user.getId()));

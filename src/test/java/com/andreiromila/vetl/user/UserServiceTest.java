@@ -1,6 +1,7 @@
 package com.andreiromila.vetl.user;
 
 import com.andreiromila.vetl.AbstractDatabaseTest;
+import com.andreiromila.vetl.exceptions.HttpNotFoundException;
 import com.andreiromila.vetl.role.RoleRepository;
 import com.andreiromila.vetl.storage.FileStorageService;
 import com.andreiromila.vetl.user.web.UserCreateRequest;
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -58,7 +58,7 @@ public class UserServiceTest extends AbstractDatabaseTest {
     void loadUserByUsername_withInvalidUsername_throwsException() {
 
         assertThatThrownBy(() -> userService.loadUserByUsername("nonexistent"))
-                .isInstanceOf(UsernameNotFoundException.class)
+                .isInstanceOf(HttpNotFoundException.class)
                 .hasMessage("No user found with username: nonexistent");
 
     }
