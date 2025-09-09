@@ -25,7 +25,7 @@
                   <!-- Celda para el Logo -->
                   <td width="64" valign="middle">
                     <img width="48" height="48" alt="Vortex ETL Logo"
-                      src="${logoUrl}}"
+                      src="${logoUrl}"
                       style="display: block; border-radius: 8px;">
                   </td>
                   <!-- Celda para el Texto -->
